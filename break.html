@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 1.5rem;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 32px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 id="greeting">Session Complete!</h1>
+    <p id="message">Preparing your next session...</p>
+
+    <button class="btn" id="start-next-btn">Start Next Session</button>
+
+    <script src="break.js"></script>
+</body>
+
+</html>

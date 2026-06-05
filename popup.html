@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            width: 240px;
+            font-family: Arial, sans-serif;
+            padding: 15px;
+            margin: 0;
+            text-align: center;
+        }
+
+        .timer-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            margin: 2px;
+            cursor: pointer;
+        }
+
+        .settings {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            text-align: left;
+        }
+
+        .settings label {
+            display: block;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .settings input {
+            width: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Pomodoro Timer</h3>
+    <div class="timer-display" id="time-left">25:00</div>
+
+    <div>
+        <button class="btn" id="start-btn">Start</button>
+        <button class="btn" id="pause-btn">Pause</button>
+        <button class="btn" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="settings">
+        <h4>Duration (Mins)</h4>
+        <label>Work: <input type="number" id="work-time" value="25" min="1"></label>
+        <label>Short Break: <input type="number" id="short-time" value="5" min="1"></label>
+        <label>Long Break: <input type="number" id="long-time" value="15" min="1"></label>
+        <button class="btn" id="save-settings" style="margin-top: 8px; width: 100%;">Save & Reset</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>German Time Trainer</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .clock-wrapper {
+            position: relative;
+        }
+
+        svg {
+            cursor: pointer;
+        }
+
+        .info {
+            width: 350px;
+        }
+
+        .digital-time {
+            font-size: 40px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        #hourHand,
+        #minuteHand {
+            cursor: grab;
+        }
+
+        #hourHand:active,
+        #minuteHand:active {
+            cursor: grabbing;
+        }
+
+        .phrase {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button {
+            border: none;
+            background: #1976d2;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="clock-wrapper">
+
+            <svg id="clock" width="400" height="400">
+
+                <circle cx="200" cy="200" r="180" fill="white" stroke="#333" stroke-width="3" />
+
+                <g id="numbers"></g>
+
+                <line id="hourHand" x1="200" y1="200" x2="200" y2="110" stroke="#222" stroke-width="12"
+                    stroke-linecap="round" />
+
+                <line id="minuteHand" x1="200" y1="200" x2="200" y2="70" stroke="#1976d2" stroke-width="10"
+                    stroke-linecap="round" />
+
+                <circle cx="200" cy="200" r="8" fill="#333" />
+            </svg>
+
+        </div>
+
+        <div class="info">
+            <div id="digitalTime" class="digital-time"></div>
+            <div id="phrases"></div>
+            <button id="liveModeBtn">
+                Live Clock
+            </button>
+
+            <button id="practiceModeBtn">
+                Practice Mode
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+
+        const center = 200;
+
+        const clock = document.getElementById("clock");
+        const hourHand = document.getElementById("hourHand");
+        const minuteHand = document.getElementById("minuteHand");
+
+        let totalMinutes = 8 * 60;
+        let lastMinuteAngle = null;
+        let hour = 8;
+        let minute = 0;
+        let liveMode = false;
+        let liveTimer = null;
+
+        let dragging = null;
+
+        const numbers = document.getElementById("numbers");
+
+        for (let i = 1; i <= 12; i++) {
+
+            const angle = (i * 30 - 90) * Math.PI / 180;
+
+            const x = center + Math.cos(angle) * 150;
+            const y = center + Math.sin(angle) * 150;
+
+            const text = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "text"
+            );
+
+            text.setAttribute("x", x);
+            text.setAttribute("y", y + 5);
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("font-size", "24");
+
+            text.textContent = i;
+
+            numbers.appendChild(text);
+        }
+
+        function syncWithCurrentTime() {
+
+            const now = new Date();
+
+            const hours =
+                now.getHours() % 12;
+
+            const minutes =
+                now.getMinutes();
+
+            totalMinutes =
+                hours * 60 + minutes;
+
+            updateClock();
+        }
+
+        function germanHour(h) {
+
+            const arr = [
+                "null", "eins", "zwei", "drei", "vier",
+                "fünf", "sechs", "sieben", "acht",
+                "neun", "zehn", "elf", "zwölf"
+            ];
+
+            return arr[h];
+        }
+
+        function getHour() {
+            return Math.floor(totalMinutes / 60) % 12 || 12;
+        }
+
+        function getMinute() {
+            return totalMinutes % 60;
+        }
+
+        function germanMinute(m) {
+
+            const map = {
+                0: "null",
+                5: "fünf",
+                10: "zehn",
+                15: "fünfzehn",
+                20: "zwanzig",
+                25: "fünfundzwanzig",
+                30: "dreißig",
+                35: "fünfunddreißig",
+                40: "vierzig",
+                45: "fünfundvierzig",
+                50: "fünfzig",
+                55: "fünfundfünfzig"
+            };
+
+            return map[m] || m;
+        }
+
+        function buildGermanTime(h, m) {
+
+            const nextHour = (h % 12) + 1;
+
+            const list = [];
+
+            list.push(
+                `${germanHour(h)} Uhr ${germanMinute(m)}`
+            );
+
+            if (m === 15) {
+                list.push(`Viertel nach ${germanHour(h)}`);
+            }
+
+            if (m === 45) {
+                list.push(`Viertel vor ${germanHour(nextHour)}`);
+            }
+
+            if (m === 30) {
+                list.push(`halb ${germanHour(nextHour)}`);
+            }
+
+            if (m === 20) {
+                list.push(`zwanzig nach ${germanHour(h)}`);
+            }
+
+            if (m === 40) {
+                list.push(`zwanzig vor ${germanHour(nextHour)}`);
+            }
+
+            if (m === 10) {
+                list.push(`zehn nach ${germanHour(h)}`);
+            }
+
+            if (m === 50) {
+                list.push(`zehn vor ${germanHour(nextHour)}`);
+            }
+
+            return list;
+        }
+
+        function speak(text) {
+
+            const utterance =
+                new SpeechSynthesisUtterance(text);
+
+            utterance.lang = "de-DE";
+
+            speechSynthesis.speak(utterance);
+        }
+
+        function renderPhrases(hour, minute) {
+
+            const phrases =
+                buildGermanTime(hour, minute);
+
+            const container =
+                document.getElementById("phrases");
+
+            container.innerHTML = "";
+
+            phrases.forEach(text => {
+
+                const div =
+                    document.createElement("div");
+
+                div.className = "phrase";
+
+                div.innerHTML = `
+      <span>${text}</span>
+      <button>🔊</button>
+    `;
+
+                div
+                    .querySelector("button")
+                    .addEventListener("click", () => {
+                        speak(text);
+                    });
+
+                container.appendChild(div);
+            });
+        }
+
+        function updateClock() {
+
+            const displayHour =
+                Math.floor(totalMinutes / 60) % 12 || 12;
+
+            const displayMinute =
+                totalMinutes % 60;
+
+            const hourAngle =
+                (displayHour % 12) * 30 +
+                displayMinute * 0.5;
+
+            const minuteAngle =
+                displayMinute * 6;
+
+            setHand(
+                hourHand,
+                90,
+                hourAngle
+            );
+
+            setHand(
+                minuteHand,
+                130,
+                minuteAngle
+            );
+
+            document.getElementById(
+                "digitalTime"
+            ).textContent =
+                `${String(displayHour).padStart(2, "0")}:${String(displayMinute).padStart(2, "0")}`;
+
+            renderPhrases(
+                displayHour,
+                displayMinute
+            );
+        }
+
+        function setHand(hand, length, angle) {
+
+            const rad =
+                (angle - 90) * Math.PI / 180;
+
+            const x =
+                center + Math.cos(rad) * length;
+
+            const y =
+                center + Math.sin(rad) * length;
+
+            hand.setAttribute("x2", x);
+            hand.setAttribute("y2", y);
+        }
+
+        hourHand.addEventListener(
+            "mousedown",
+            () => dragging = "hour"
+        );
+
+        minuteHand.addEventListener(
+            "mousedown",
+            () => dragging = "minute"
+        );
+
+        window.addEventListener(
+            "mouseup",
+            () => dragging = null
+        );
+
+        document
+            .getElementById("liveModeBtn")
+            .addEventListener("click", () => {
+
+                liveMode = true;
+
+                syncWithCurrentTime();
+
+                if (liveTimer) {
+                    clearInterval(liveTimer);
+                }
+
+                liveTimer =
+                    setInterval(
+                        syncWithCurrentTime,
+                        1000
+                    );
+            });
+
+        document
+            .getElementById("practiceModeBtn")
+            .addEventListener("click", () => {
+
+                liveMode = false;
+
+                clearInterval(liveTimer);
+            });
+
+        document.addEventListener(
+            "mousemove",
+            (e) => {
+
+                if (liveMode) {
+                    return;
+                }
+
+                if (!dragging) return;
+
+                const rect =
+                    clock.getBoundingClientRect();
+
+                const x =
+                    e.clientX - rect.left - center;
+
+                const y =
+                    e.clientY - rect.top - center;
+
+                let angle =
+                    Math.atan2(y, x) * 180 / Math.PI + 90;
+
+                if (angle < 0) {
+                    angle += 360;
+                }
+
+                if (dragging === "minute") {
+
+                    if (lastMinuteAngle === null) {
+                        lastMinuteAngle = angle;
+                        return;
+                    }
+
+                    let diff =
+                        angle - lastMinuteAngle;
+
+                    if (diff > 180) {
+                        diff -= 360;
+                    }
+
+                    if (diff < -180) {
+                        diff += 360;
+                    }
+
+                    const minuteChange =
+                        Math.round(diff / 6);
+
+                    if (minuteChange !== 0) {
+
+                        totalMinutes += minuteChange;
+
+                        if (totalMinutes < 0) {
+                            totalMinutes += 12 * 60;
+                        }
+
+                        totalMinutes =
+                            totalMinutes % (12 * 60);
+
+                        lastMinuteAngle = angle;
+
+                        updateClock();
+                    }
+                }
+
+                if (dragging === "hour") {
+
+                    const newHour =
+                        Math.round(angle / 30) % 12 || 12;
+
+                    const currentMinute =
+                        totalMinutes % 60;
+
+                    totalMinutes =
+                        (newHour % 12) * 60 +
+                        currentMinute;
+
+                    updateClock();
+                }
+            }
+        );
+
+        window.addEventListener("mouseup", () => {
+
+            dragging = null;
+
+            lastMinuteAngle = null;
+        });
+
+        updateClock();
+
+    </script>
+
+</body>
+
+</html>
