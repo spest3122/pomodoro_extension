@@ -1,49 +1,73 @@
 document.addEventListener("DOMContentLoaded", () => {
     const greetingEl = document.getElementById("greeting");
     const messageEl = document.getElementById("message");
-    const actionBtn = document.getElementById("start-next-btn");
+    const container = document.getElementById("action-buttons-container");
 
-    // 1. Read the next session details configured by the background script
-    chrome.storage.local.get(["currentMode", "workTime", "shortBreak", "longBreak", "cycleTarget"], (data) => {
+    chrome.storage.local.get(["currentMode", "tasks", "shortBreak", "longBreak"], (data) => {
         const mode = data.currentMode;
+        const tasksList = data.tasks || [{ name: "Work 1", duration: 25 }];
 
-        if (mode === "work") {
+        container.innerHTML = ""; // Clear loader text
+
+        if (mode === "short-break" || mode === "long-break") {
+            // --- WORK JUST ENDED -> START A BREAK ---
+            const isLong = (mode === "long-break");
+            greetingEl.textContent = isLong ? "🏆 Outstanding Mega Focus!" : "💪 Focus Session Finished!";
+            const breakMins = isLong ? data.longBreak : data.shortBreak;
+            messageEl.textContent = `Time to step away and reset for ${breakMins} minutes.`;
+
+            // Create a single button to kick off the break countdown
+            const breakBtn = document.createElement("button");
+            breakBtn.className = "btn";
+            breakBtn.textContent = isLong ? "🛋️ Start Long Break" : "☕ Start Short Break";
+            breakBtn.style.backgroundColor = isLong ? "#3498db" : "#2ecc71";
+
+            breakBtn.addEventListener("click", () => {
+                startSessionSequence(breakMins * 60, mode);
+            });
+            container.appendChild(breakBtn);
+
+        } else {
+            // --- BREAK JUST ENDED -> USER CHOOSES NEXT WORK TASK ---
             greetingEl.textContent = "☕ Break is Over!";
-            messageEl.textContent = `Ready to get back to it? Next focus block is ${data.workTime} minutes.`;
-            actionBtn.textContent = "💻 Start Work Session";
-            actionBtn.style.backgroundColor = "#e74c3c"; // Red for work
-        } else if (mode === "short-break") {
-            greetingEl.textContent = "💪 Focus Block Done!";
-            messageEl.textContent = `Great job. Take a quick breather for ${data.shortBreak} minutes.`;
-            actionBtn.textContent = "☕ Start Short Break";
-            actionBtn.style.backgroundColor = "#2ecc71"; // Green for break
-        } else if (mode === "long-break") {
-            greetingEl.textContent = `🏆 ${data.cycleTarget} Sessions Done! Mega Focus!`;
-            messageEl.textContent = `You earned a deep rest. Take ${data.longBreak} minutes to stretch.`;
-            actionBtn.textContent = "🛋️ Start Long Break";
-            actionBtn.style.backgroundColor = "#3498db"; // Blue for long break
+            messageEl.textContent = "Which focus block would you like to tackle next?";
+
+            // Dynamically map every user task into its own interactive dashboard button
+            tasksList.forEach((task, index) => {
+                const taskBtn = document.createElement("button");
+                taskBtn.className = "btn";
+                taskBtn.textContent = `🎯 ${task.name} (${task.duration}m)`;
+
+                // Give buttons a distinct color scheme so they look distinct
+                const colors = ["#e74c3c", "#9b59b6", "#34495e"];
+                taskBtn.style.backgroundColor = colors[index % colors.length];
+
+                taskBtn.addEventListener("click", () => {
+                    // Update the background task index to match the selected button
+                    chrome.storage.local.set({ currentTaskIndex: index }, () => {
+                        startSessionSequence(task.duration * 60, "work");
+                    });
+                });
+                container.appendChild(taskBtn);
+            });
         }
     });
 
-    // 2. Start the timer and close the tab when clicked
-    actionBtn.addEventListener("click", () => {
-        chrome.storage.local.get(["timeLeft", "currentMode"], (data) => {
-            chrome.storage.local.set({ isRunning: true }, () => {
-                chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+    // Reusable function to engage the background timer and terminate the tab
+    function startSessionSequence(seconds, mode) {
+        chrome.storage.local.set({ timeLeft: seconds, isRunning: true, currentMode: mode }, () => {
+            chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
 
-                // Force an immediate badge update so it shifts color the moment you click
-                const minutesLeft = Math.ceil(data.timeLeft / 60);
-                chrome.action.setBadgeText({ text: `${minutesLeft}m` });
-                if (data.currentMode === 'work') chrome.action.setBadgeBackgroundColor({ color: "#e74c3c" });
-                if (data.currentMode === 'short-break') chrome.action.setBadgeBackgroundColor({ color: "#2ecc71" });
-                if (data.currentMode === 'long-break') chrome.action.setBadgeBackgroundColor({ color: "#3498db" });
+            // Update badge aesthetics instantly
+            const minutesLeft = Math.ceil(seconds / 60);
+            chrome.action.setBadgeText({ text: `${minutesLeft}m` });
+            if (mode === 'work') chrome.action.setBadgeBackgroundColor({ color: "#e74c3c" });
+            else if (mode === 'short-break') chrome.action.setBadgeBackgroundColor({ color: "#2ecc71" });
+            else if (mode === 'long-break') chrome.action.setBadgeBackgroundColor({ color: "#3498db" });
 
-                chrome.tabs.getCurrent((currentTab) => {
-                    if (currentTab) {
-                        chrome.tabs.remove(currentTab.id);
-                    }
-                });
+            chrome.tabs.getCurrent((currentTab) => {
+                if (currentTab) chrome.tabs.remove(currentTab.id);
             });
         });
-    });
+    }
 });

@@ -27,29 +27,36 @@
             margin-bottom: 30px;
         }
 
+        /* Container for dynamic task selection buttons */
+        .buttons-flex {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         .btn {
             padding: 15px 32px;
             font-size: 1.3rem;
             font-weight: bold;
-            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: transform 0.1s, background 0.2s;
         }
 
         .btn:hover {
-            background-color: #0056b3;
+            transform: scale(1.03);
         }
     </style>
 </head>
 
 <body>
     <h1 id="greeting">Session Complete!</h1>
-    <p id="message">Preparing your next session...</p>
+    <p id="message">What would you like to do next?</p>
 
-    <button class="btn" id="start-next-btn">Start Next Session</button>
+    <div class="buttons-flex" id="action-buttons-container"></div>
 
     <script src="break.js"></script>
 </body>
