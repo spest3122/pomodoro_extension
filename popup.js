@@ -10,14 +10,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const workInput = document.getElementById("work-time");
     const shortInput = document.getElementById("short-time");
     const longInput = document.getElementById("long-time");
+    const cycleInput = document.getElementById("cycle-target"); // NEW Selector
 
     // Load saved state and values
     chrome.storage.local.get(
-        ["timeLeft", "isRunning", "workTime", "shortBreak", "longBreak"],
+        ["timeLeft", "isRunning", "workTime", "shortBreak", "longBreak", "cycleTarget"],
         (data) => {
             workInput.value = data.workTime || 25;
             shortInput.value = data.shortBreak || 5;
             longInput.value = data.longBreak || 15;
+            cycleInput.value = data.cycleTarget || 4; // NEW: default to 4
             updateUI(data.timeLeft);
 
             if (data.isRunning) {
@@ -80,6 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const workMins = parseInt(workInput.value) || 25;
         const shortMins = parseInt(shortInput.value) || 5;
         const longMins = parseInt(longInput.value) || 15;
+        const targetCycles = parseInt(cycleInput.value) || 4; // NEW
 
         chrome.alarms.clear("pomodoroTimer");
         clearInterval(updateInterval);
@@ -88,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
             workTime: workMins,
             shortBreak: shortMins,
             longBreak: longMins,
+            cycleTarget: targetCycles, // NEW
             timeLeft: workMins * 60,
             isRunning: false,
             currentMode: 'work'

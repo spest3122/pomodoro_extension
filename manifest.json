@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "Custom Pomodoro Timer",
-    "version": "1.0",
-    "description": "A simple Pomodoro timer with customizable countdown, short break, and long break times.",
+    "version": "1.1",
+    "description": "A simple Pomodoro timer with customizable countdown, break times, and dynamic badge status.",
     "permissions": [
         "storage",
         "alarms",

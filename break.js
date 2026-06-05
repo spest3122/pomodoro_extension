@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const actionBtn = document.getElementById("start-next-btn");
 
     // 1. Read the next session details configured by the background script
-    chrome.storage.local.get(["currentMode", "workTime", "shortBreak", "longBreak"], (data) => {
+    chrome.storage.local.get(["currentMode", "workTime", "shortBreak", "longBreak", "cycleTarget"], (data) => {
         const mode = data.currentMode;
 
         if (mode === "work") {
@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
             actionBtn.textContent = "☕ Start Short Break";
             actionBtn.style.backgroundColor = "#2ecc71"; // Green for break
         } else if (mode === "long-break") {
-            greetingEl.textContent = "🏆 4 Sessions Done! Mega Focus!";
+            greetingEl.textContent = `🏆 ${data.cycleTarget} Sessions Done! Mega Focus!`;
             messageEl.textContent = `You earned a deep rest. Take ${data.longBreak} minutes to stretch.`;
             actionBtn.textContent = "🛋️ Start Long Break";
             actionBtn.style.backgroundColor = "#3498db"; // Blue for long break
@@ -27,16 +27,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 2. Start the timer and close the tab when clicked
     actionBtn.addEventListener("click", () => {
-        // Tell the background service worker to turn the gears on
-        chrome.storage.local.set({ isRunning: true }, () => {
-            // Create the alarm loop
-            chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+        chrome.storage.local.get(["timeLeft", "currentMode"], (data) => {
+            chrome.storage.local.set({ isRunning: true }, () => {
+                chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
 
-            // Close this tab cleanly
-            chrome.tabs.getCurrent((currentTab) => {
-                if (currentTab) {
-                    chrome.tabs.remove(currentTab.id);
-                }
+                // Force an immediate badge update so it shifts color the moment you click
+                const minutesLeft = Math.ceil(data.timeLeft / 60);
+                chrome.action.setBadgeText({ text: `${minutesLeft}m` });
+                if (data.currentMode === 'work') chrome.action.setBadgeBackgroundColor({ color: "#e74c3c" });
+                if (data.currentMode === 'short-break') chrome.action.setBadgeBackgroundColor({ color: "#2ecc71" });
+                if (data.currentMode === 'long-break') chrome.action.setBadgeBackgroundColor({ color: "#3498db" });
+
+                chrome.tabs.getCurrent((currentTab) => {
+                    if (currentTab) {
+                        chrome.tabs.remove(currentTab.id);
+                    }
+                });
             });
         });
     });
