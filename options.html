@@ -2,21 +2,49 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Timer Settings Configuration</title>
+    <title>Timer Settings & Analytics Dashboard</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        max-width: 500px;
+        max-width: 550px;
         margin: 40px auto;
         padding: 20px;
         background-color: #f8f9fa;
         border: 1px solid #e1e4e8;
         border-radius: 8px;
       }
+      /* Tab Navigation Layout */
+      .tabs-nav {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 10px;
+      }
+      .tab-btn {
+        padding: 8px 16px;
+        cursor: pointer;
+        border: none;
+        background: #e9ecef;
+        font-weight: bold;
+        border-radius: 4px;
+      }
+      .tab-btn.active {
+        background-color: #007bff;
+        color: white;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+
       h2 {
         border-bottom: 2px solid #007bff;
         padding-bottom: 8px;
         margin-top: 0;
+        margin-bottom: 20px;
       }
       h4 {
         margin-bottom: 8px;
@@ -65,52 +93,125 @@
         font-size: 1rem;
         border-radius: 4px;
       }
-      #save-btn:hover {
-        background-color: #218838;
+
+      /* Records styling elements */
+      .stat-box {
+        background: #fff;
+        padding: 20px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .stat-number {
+        font-size: 3.5rem;
+        font-weight: bold;
+        color: #28a745;
+      }
+      .history-list {
+        max-height: 250px;
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+        list-style: none;
+        margin: 0;
+      }
+      .history-item {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+      }
+      .history-item:last-child {
+        border-bottom: none;
+      }
+      .clear-records-btn {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        float: right;
+        font-size: 0.8rem;
       }
     </style>
   </head>
   <body>
-    <h2>⏱️ Configuration Board</h2>
+    <h2>⏱️ Pomodoro Dashboard</h2>
 
-    <div class="section">
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10px;
-        "
-      >
-        <h4>Custom Task Array (Max 3)</h4>
-        <button
-          class="btn"
-          id="add-task-btn"
-          style="font-size: 0.8rem; padding: 4px 8px"
+    <div class="tabs-nav">
+      <button class="tab-btn active" id="nav-settings">
+        ⚙️ Configurations
+      </button>
+      <button class="tab-btn" id="nav-records">📊 Records History</button>
+    </div>
+
+    <div id="content-settings" class="tab-content active">
+      <div class="section">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+          "
         >
-          + Add Task
+          <h4>Custom Task Array (Max 3)</h4>
+          <button
+            class="btn"
+            id="add-task-btn"
+            style="font-size: 0.8rem; padding: 4px 8px"
+          >
+            + Add Task
+          </button>
+        </div>
+        <div id="tasks-container"></div>
+      </div>
+
+      <div
+        class="section"
+        style="border-top: 1px solid #ddd; padding-top: 15px"
+      >
+        <h4>Break & Schedule Architecture</h4>
+        <label
+          >Short Break Duration:
+          <input type="number" id="short-time" min="1" /> minutes</label
+        >
+        <label
+          >Long Break Duration:
+          <input type="number" id="long-time" min="1" /> minutes</label
+        >
+        <label
+          >Trigger Long Break After:
+          <input type="number" id="cycle-target" min="1" /> focus blocks</label
+        >
+      </div>
+
+      <button id="save-btn">Save Configurations & Reset Timer</button>
+    </div>
+
+    <div id="content-records" class="tab-content">
+      <div class="stat-box">
+        <h4>Completed Focus Blocks Today</h4>
+        <div class="stat-number" id="today-count">0</div>
+      </div>
+
+      <div style="margin-bottom: 10px; height: 20px">
+        <h4 style="display: inline-block; margin: 0">Activity Timeline</h4>
+        <button class="clear-records-btn" id="clear-history-btn">
+          Clear All Logs
         </button>
       </div>
-      <div id="tasks-container"></div>
+      <ul class="history-list" id="history-log-container">
+        <li style="color: #888; text-align: center; padding: 20px">
+          No recorded blocks logged yet.
+        </li>
+      </ul>
     </div>
-
-    <div class="section" style="border-top: 1px solid #ddd; padding-top: 15px">
-      <h4>Break & Schedule Architecture</h4>
-      <label
-        >Short Break Duration:
-        <input type="number" id="short-time" min="1" /> minutes</label
-      >
-      <label
-        >Long Break Duration:
-        <input type="number" id="long-time" min="1" /> minutes</label
-      >
-      <label
-        >Trigger Long Break After:
-        <input type="number" id="cycle-target" min="1" /> focus blocks</label
-      >
-    </div>
-
-    <button id="save-btn">Save Configurations & Reset Timer</button>
 
     <script src="options.js"></script>
   </body>

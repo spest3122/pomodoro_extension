@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Selector Bindings
   const tasksContainer = document.getElementById("tasks-container");
   const addTaskBtn = document.getElementById("add-task-btn");
   const shortInput = document.getElementById("short-time");
@@ -6,9 +7,103 @@ document.addEventListener("DOMContentLoaded", () => {
   const cycleInput = document.getElementById("cycle-target");
   const saveBtn = document.getElementById("save-btn");
 
+  // Tab System Selectors
+  const navSettings = document.getElementById("nav-settings");
+  const navRecords = document.getElementById("nav-records");
+  const contentSettings = document.getElementById("content-settings");
+  const contentRecords = document.getElementById("content-records");
+
+  // History Elements
+  const todayCountEl = document.getElementById("today-count");
+  const historyLogContainer = document.getElementById("history-log-container");
+  const clearHistoryBtn = document.getElementById("clear-history-btn");
+
   let localTasks = [];
 
-  // Populate settings from storage on startup
+  // --- TAB NAVIGATION CORE SWITCH ROUTE ---
+  navSettings.addEventListener("click", () => switchTab("settings"));
+  navRecords.addEventListener("click", () => switchTab("records"));
+
+  function switchTab(target) {
+    if (target === "settings") {
+      navSettings.classList.add("active");
+      navRecords.classList.remove("active");
+      contentSettings.classList.add("active");
+      contentRecords.classList.remove("active");
+    } else {
+      navSettings.classList.remove("active");
+      navRecords.classList.add("active");
+      contentSettings.classList.remove("active");
+      contentRecords.classList.add("active");
+      loadAndRenderRecords(); // Pull fresh logs whenever view renders
+    }
+  }
+
+  // --- ANALYTICS PARSING ENGINE ---
+  function loadAndRenderRecords() {
+    chrome.storage.local.get({ history: [] }, (data) => {
+      const logs = data.history;
+
+      // Calculate start of today's date index footprint
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startOfTodayTimestamp = today.getTime();
+
+      let sessionsCompletedToday = 0;
+      historyLogContainer.innerHTML = "";
+
+      if (logs.length === 0) {
+        historyLogContainer.innerHTML = `<li style="color:#888; text-align:center; padding:20px;">No recorded blocks logged yet.</li>`;
+        todayCountEl.textContent = "0";
+        return;
+      }
+
+      // Read history from newest to oldest
+      for (let i = logs.length - 1; i >= 0; i--) {
+        const item = logs[i];
+
+        if (item.timestamp >= startOfTodayTimestamp) {
+          sessionsCompletedToday++;
+        }
+
+        // Parse human legible timestamps
+        const logDate = new Date(item.timestamp);
+        const formattedTime = logDate.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const formattedDate = logDate.toLocaleDateString([], {
+          month: "short",
+          day: "numeric",
+        });
+
+        const li = document.createElement("li");
+        li.className = "history-item";
+        li.innerHTML = `
+          <span>🎯 <strong>${item.taskName}</strong></span>
+          <span style="color:#777;">${formattedDate} at ${formattedTime}</span>
+        `;
+        historyLogContainer.appendChild(li);
+      }
+
+      todayCountEl.textContent = sessionsCompletedToday;
+    });
+  }
+
+  // Clear data loop
+  clearHistoryBtn.addEventListener("click", () => {
+    if (
+      confirm(
+        "Are you sure you want to permanently wipe all completion metrics?",
+      )
+    ) {
+      chrome.storage.local.set({ history: [] }, () => {
+        loadAndRenderRecords();
+      });
+    }
+  });
+
+  // --- EXISTING TASK SETTINGS LOGIC KEEPERS ---
   chrome.storage.local.get(
     ["tasks", "shortBreak", "longBreak", "cycleTarget"],
     (data) => {
@@ -30,14 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
         <input type="number" class="task-duration" value="${task.duration}" min="1"> mins
         <button class="delete-btn" type="button" ${localTasks.length <= 1 ? 'disabled style="opacity:0.2;"' : ""}>✕</button>
       `;
-
       row.querySelector(".task-name").addEventListener("input", (e) => {
         localTasks[index].name = e.target.value;
       });
       row.querySelector(".task-duration").addEventListener("input", (e) => {
         localTasks[index].duration = parseInt(e.target.value) || 25;
       });
-
       row.querySelector(".delete-btn").addEventListener("click", () => {
         if (localTasks.length > 1) {
           localTasks.splice(index, 1);
@@ -60,7 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
   saveBtn.addEventListener("click", () => {
     chrome.alarms.clear("pomodoroTimer");
     const initialSeconds = localTasks[0].duration * 60;
-
     chrome.storage.local.set(
       {
         tasks: localTasks,
@@ -74,7 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
         completedWorkSessions: 0,
       },
       () => {
-        // Direct update to clear extension badge icon text back to initial task state
         chrome.action.setBadgeText({ text: `${localTasks[0].duration}m` });
         chrome.action.setBadgeBackgroundColor({ color: "#e74c3c" });
         alert("Settings saved successfully! Timer reset to your first task.");
