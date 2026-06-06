@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Timer Settings Configuration</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 500px;
+        margin: 40px auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+      }
+      h2 {
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 8px;
+        margin-top: 0;
+      }
+      h4 {
+        margin-bottom: 8px;
+        color: #444;
+      }
+      .task-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 8px;
+        align-items: center;
+      }
+      input[type="text"] {
+        flex: 2;
+        padding: 6px;
+      }
+      input[type="number"] {
+        width: 60px;
+        padding: 6px;
+      }
+      .btn {
+        padding: 8px 16px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .delete-btn {
+        color: red;
+        cursor: pointer;
+        background: none;
+        border: none;
+        font-size: 1.1rem;
+      }
+      .section {
+        margin-bottom: 25px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+      }
+      #save-btn {
+        width: 100%;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 12px;
+        font-size: 1rem;
+        border-radius: 4px;
+      }
+      #save-btn:hover {
+        background-color: #218838;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>⏱️ Configuration Board</h2>
+
+    <div class="section">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+        "
+      >
+        <h4>Custom Task Array (Max 3)</h4>
+        <button
+          class="btn"
+          id="add-task-btn"
+          style="font-size: 0.8rem; padding: 4px 8px"
+        >
+          + Add Task
+        </button>
+      </div>
+      <div id="tasks-container"></div>
+    </div>
+
+    <div class="section" style="border-top: 1px solid #ddd; padding-top: 15px">
+      <h4>Break & Schedule Architecture</h4>
+      <label
+        >Short Break Duration:
+        <input type="number" id="short-time" min="1" /> minutes</label
+      >
+      <label
+        >Long Break Duration:
+        <input type="number" id="long-time" min="1" /> minutes</label
+      >
+      <label
+        >Trigger Long Break After:
+        <input type="number" id="cycle-target" min="1" /> focus blocks</label
+      >
+    </div>
+
+    <button id="save-btn">Save Configurations & Reset Timer</button>
+
+    <script src="options.js"></script>
+  </body>
+</html>
