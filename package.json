@@ -1,0 +1,14 @@
+{
+  "name": "pomodoro-timer-tests",
+  "version": "1.0.0",
+  "description": "Tests for Custom Pomodoro Timer Chrome Extension",
+  "main": "src/background.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  }
+}

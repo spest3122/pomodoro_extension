@@ -35,7 +35,16 @@ function updateBadge(timeLeft, mode) {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "pomodoroTimer") {
     chrome.storage.local.get(
-      ["timeLeft", "currentMode", "completedWorkSessions", "cycleTarget"],
+      [
+        "timeLeft",
+        "currentMode",
+        "completedWorkSessions",
+        "cycleTarget",
+        "tasks",
+        "currentTaskIndex",
+        "shortBreak",
+        "longBreak",
+      ],
       (data) => {
         let time = data.timeLeft - 1;
 
@@ -78,11 +87,26 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             nextMode = "work";
           }
 
+          let nextTimeLeft = 25 * 60;
+          if (nextMode === "short-break") {
+            nextTimeLeft = (data.shortBreak || 5) * 60;
+          } else if (nextMode === "long-break") {
+            nextTimeLeft = (data.longBreak || 15) * 60;
+          } else {
+            const tasksList = data.tasks || [
+              { name: "Work Session", duration: 25 },
+            ];
+            const currentTaskIdx = data.currentTaskIndex || 0;
+            const nextTaskDuration = tasksList[currentTaskIdx]?.duration || 25;
+            nextTimeLeft = nextTaskDuration * 60;
+          }
+
           chrome.storage.local.set(
             {
               currentMode: nextMode,
               completedWorkSessions: nextCount,
               isRunning: false,
+              timeLeft: nextTimeLeft,
             },
             () => {
               updateBadge(0, data.currentMode);
