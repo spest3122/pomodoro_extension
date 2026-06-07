@@ -86,7 +86,20 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             },
             () => {
               updateBadge(0, data.currentMode);
-              chrome.tabs.create({ url: chrome.runtime.getURL("break.html") });
+              // 1. Open the break tab
+              chrome.tabs.create(
+                { url: chrome.runtime.getURL("break.html") },
+                (newTab) => {
+                  // 2. Query the current window that contains this new tab
+                  chrome.windows.get(newTab.windowId, (currentWindow) => {
+                    // 3. FORCE Chrome to bring the window into active viewport focus
+                    chrome.windows.update(newTab.windowId, {
+                      focused: true,
+                      drawAttention: true, // Causes taskbar/dock icon to flash on Windows/Mac
+                    });
+                  });
+                },
+              );
             },
           );
         } else {
