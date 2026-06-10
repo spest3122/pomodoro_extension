@@ -21,11 +21,63 @@
         font-weight: bold;
         margin-bottom: 10px;
       }
-      .btn {
-        padding: 6px 12px;
-        margin: 2px;
-        cursor: pointer;
+
+      /* Task buttons — replace Start */
+      #task-btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        margin-bottom: 8px;
       }
+      .task-btn {
+        flex: 1 1 auto;
+        padding: 7px 10px;
+        font-size: 0.82rem;
+        font-weight: bold;
+        cursor: pointer;
+        border: 2px solid var(--task-color);
+        background: #fff;
+        color: var(--task-color);
+        border-radius: 6px;
+        transition: background 0.15s, color 0.15s, opacity 0.15s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .task-btn.active {
+        background: var(--task-color);
+        color: #fff;
+      }
+      .task-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      /* Per-task color palette */
+      .task-btn-0 { --task-color: #e74c3c; } /* tomato red   */
+      .task-btn-1 { --task-color: #6366f1; } /* indigo       */
+      .task-btn-2 { --task-color: #f59e0b; } /* amber        */
+
+      /* Pause / Reset row */
+      .controls-row {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        margin-top: 4px;
+      }
+      .btn {
+        flex: 1;
+        padding: 7px 0;
+        cursor: pointer;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: #f5f5f5;
+      }
+      .btn:hover {
+        background: #e8e8e8;
+      }
+
       .footer-links {
         margin-top: 15px;
         padding-top: 10px;
@@ -44,16 +96,17 @@
     <div id="current-task-title">Loading...</div>
     <div class="timer-display" id="time-left">25:00</div>
 
-    <div>
-      <button class="btn" id="start-btn">Start</button>
-      <button class="btn" id="pause-btn">Pause</button>
-      <button class="btn" id="reset-btn">Reset</button>
+    <!-- One button per custom task (replaces Start) -->
+    <div id="task-btn-row"></div>
+
+    <!-- Pause + Reset -->
+    <div class="controls-row">
+      <button class="btn" id="pause-btn">⏸ Pause</button>
+      <button class="btn" id="reset-btn">↺ Reset</button>
     </div>
 
     <div class="footer-links">
-      <span class="settings-link" id="open-settings"
-        >⚙️ Open Settings Board</span
-      >
+      <span class="settings-link" id="open-settings">⚙️ Open Settings Board</span>
     </div>
 
     <script src="popup.js"></script>

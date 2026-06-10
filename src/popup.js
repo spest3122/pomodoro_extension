@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const display = document.getElementById("time-left");
   const currentTaskTitle = document.getElementById("current-task-title");
-  const startBtn = document.getElementById("start-btn");
+  const taskBtnRow = document.getElementById("task-btn-row");
   const pauseBtn = document.getElementById("pause-btn");
   const resetBtn = document.getElementById("reset-btn");
   const openSettingsLink = document.getElementById("open-settings");
@@ -9,22 +9,23 @@ document.addEventListener("DOMContentLoaded", () => {
   let localTasks = [];
   let updateInterval;
 
-  // Load active runtime configurations
+  // ── Boot: read state from storage ────────────────────────────────────────
   chrome.storage.local.get(
     ["timeLeft", "isRunning", "tasks", "currentMode", "currentTaskIndex"],
     (data) => {
       localTasks = data.tasks || [{ name: "Work 1", duration: 25 }];
-      updateStatusTitle(
-        data.currentMode,
-        localTasks,
-        data.currentTaskIndex || 0,
-      );
-      updateUI(data.timeLeft);
+      const currentIndex = data.currentTaskIndex || 0;
+      const isRunning = !!data.isRunning;
 
-      if (data.isRunning) startUIInterval();
+      updateStatusTitle(data.currentMode, localTasks, currentIndex);
+      updateUI(data.timeLeft);
+      renderTaskButtons(localTasks, currentIndex, isRunning);
+
+      if (isRunning) startUIInterval();
     },
   );
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   function updateStatusTitle(mode, tasks, index) {
     if (mode === "work") {
       const currentTask = tasks[index] || tasks[0];
@@ -36,13 +37,67 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateUI(totalSeconds) {
-    const mins = Math.floor(totalSeconds / 60)
-      .toString()
-      .padStart(2, "0");
+    const mins = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
     const secs = (totalSeconds % 60).toString().padStart(2, "0");
     display.textContent = `${mins}:${secs}`;
   }
 
+  // ── Task Buttons ──────────────────────────────────────────────────────────
+  /**
+   * Renders one button per task.
+   *
+   * Rules:
+   *  - Active task button = filled blue
+   *  - When timer is running: ALL other task buttons are disabled
+   *  - Clicking the active button while running → does nothing (only Pause stops it)
+   *  - Clicking an inactive button (timer NOT running) → switch to that task & start
+   */
+  function renderTaskButtons(tasks, activeIndex, isRunning) {
+    taskBtnRow.innerHTML = "";
+    tasks.forEach((task, index) => {
+      const btn = document.createElement("button");
+      const isActive = index === activeIndex;
+
+      btn.className = `task-btn task-btn-${index}` + (isActive ? " active" : "");
+      btn.textContent = `${task.name} (${task.duration}min)`;
+      btn.title = `${task.name} — ${task.duration} minutes`;
+
+      // Disable non-active buttons while timer is running
+      if (isRunning && !isActive) {
+        btn.disabled = true;
+      }
+
+      btn.addEventListener("click", () => {
+        // If this task is already the active running task → do nothing
+        if (isActive && isRunning) return;
+
+        // Switch to this task and start the timer
+        const seconds = task.duration * 60;
+        chrome.alarms.clear("pomodoroTimer");
+        clearInterval(updateInterval);
+
+        chrome.storage.local.set(
+          {
+            isRunning: true,
+            currentMode: "work",
+            currentTaskIndex: index,
+            timeLeft: seconds,
+          },
+          () => {
+            chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+            updateUI(seconds);
+            updateStatusTitle("work", tasks, index);
+            renderTaskButtons(tasks, index, true);
+            startUIInterval();
+          },
+        );
+      });
+
+      taskBtnRow.appendChild(btn);
+    });
+  }
+
+  // ── Polling interval (updates display while running) ─────────────────────
   function startUIInterval() {
     clearInterval(updateInterval);
     updateInterval = setInterval(() => {
@@ -55,28 +110,36 @@ document.addEventListener("DOMContentLoaded", () => {
             data.tasks || localTasks,
             data.currentTaskIndex || 0,
           );
-          if (!data.isRunning) clearInterval(updateInterval);
+          // If background stopped the timer (break started etc.), unlock buttons
+          if (!data.isRunning) {
+            clearInterval(updateInterval);
+            renderTaskButtons(
+              data.tasks || localTasks,
+              data.currentTaskIndex || 0,
+              false,
+            );
+          }
         },
       );
     }, 1000);
   }
 
-  startBtn.addEventListener("click", () => {
-    chrome.storage.local.get(["isRunning", "timeLeft"], (data) => {
-      if (!data.isRunning && data.timeLeft > 0) {
-        chrome.storage.local.set({ isRunning: true });
-        chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
-        startUIInterval();
-      }
-    });
-  });
-
+  // ── Pause ─────────────────────────────────────────────────────────────────
   pauseBtn.addEventListener("click", () => {
     chrome.alarms.clear("pomodoroTimer");
     chrome.storage.local.set({ isRunning: false });
     clearInterval(updateInterval);
+    // Re-render buttons in unlocked state so user can switch tasks
+    chrome.storage.local.get(["tasks", "currentTaskIndex"], (data) => {
+      renderTaskButtons(
+        data.tasks || localTasks,
+        data.currentTaskIndex || 0,
+        false,
+      );
+    });
   });
 
+  // ── Reset ─────────────────────────────────────────────────────────────────
   resetBtn.addEventListener("click", () => {
     chrome.alarms.clear("pomodoroTimer");
     clearInterval(updateInterval);
@@ -86,10 +149,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const seconds = list[idx].duration * 60;
       chrome.storage.local.set({ isRunning: false, timeLeft: seconds });
       updateUI(seconds);
+      renderTaskButtons(list, idx, false);
     });
   });
 
-  // Action hook to launch configuration dashboard
+  // ── Settings link ─────────────────────────────────────────────────────────
   openSettingsLink.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
   });
