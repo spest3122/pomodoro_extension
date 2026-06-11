@@ -47,10 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
    * Renders one button per task.
    *
    * Rules:
-   *  - Active task button = filled blue
-   *  - When timer is running: ALL other task buttons are disabled
-   *  - Clicking the active button while running → does nothing (only Pause stops it)
-   *  - Clicking an inactive button (timer NOT running) → switch to that task & start
+   *  - Active task button = filled color
+   *  - When running: all other task buttons are disabled
+   *  - Click active button while RUNNING  → nothing (use Pause to stop)
+   *  - Click active button while PAUSED   → resume from current timeLeft
+   *  - Click different button while paused/idle → start that task fresh;
+   *                                               previously paused task resets
    */
   function renderTaskButtons(tasks, activeIndex, isRunning) {
     taskBtnRow.innerHTML = "";
@@ -68,29 +70,45 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       btn.addEventListener("click", () => {
-        // If this task is already the active running task → do nothing
+        // Active + running → do nothing (Pause is the only way to stop)
         if (isActive && isRunning) return;
 
-        // Switch to this task and start the timer
-        const seconds = task.duration * 60;
         chrome.alarms.clear("pomodoroTimer");
         clearInterval(updateInterval);
 
-        chrome.storage.local.set(
-          {
-            isRunning: true,
-            currentMode: "work",
-            currentTaskIndex: index,
-            timeLeft: seconds,
-          },
-          () => {
-            chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
-            updateUI(seconds);
-            updateStatusTitle("work", tasks, index);
-            renderTaskButtons(tasks, index, true);
-            startUIInterval();
-          },
-        );
+        if (isActive && !isRunning) {
+          // ── RESUME: same task was paused — continue from stored timeLeft ──
+          chrome.storage.local.get(["timeLeft"], (data) => {
+            chrome.storage.local.set(
+              { isRunning: true, currentMode: "work" },
+              () => {
+                chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+                updateUI(data.timeLeft);
+                updateStatusTitle("work", tasks, index);
+                renderTaskButtons(tasks, index, true);
+                startUIInterval();
+              },
+            );
+          });
+        } else {
+          // ── START FRESH: different task clicked — reset its time & start ──
+          const seconds = task.duration * 60;
+          chrome.storage.local.set(
+            {
+              isRunning: true,
+              currentMode: "work",
+              currentTaskIndex: index,
+              timeLeft: seconds,
+            },
+            () => {
+              chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+              updateUI(seconds);
+              updateStatusTitle("work", tasks, index);
+              renderTaskButtons(tasks, index, true);
+              startUIInterval();
+            },
+          );
+        }
       });
 
       taskBtnRow.appendChild(btn);

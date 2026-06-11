@@ -181,6 +181,63 @@ describe("popup.js", () => {
     expect(currentTaskTitle.textContent).toBe("🎯 Focus: Develop");
   });
 
+  test("clicking the active task button while PAUSED resumes from stored timeLeft", () => {
+    // Develop was paused with 30:00 left (not the full 50:00)
+    chrome.storage.local.setMockStore({
+      timeLeft: 1800, // 30:00 remaining
+      isRunning: false,
+      currentMode: "work",
+      currentTaskIndex: 1,
+      tasks: [
+        { name: "Reading", duration: 25 },
+        { name: "Develop", duration: 50 },
+      ],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    // Click the active (Develop) button to resume
+    taskBtnRow.querySelectorAll(".task-btn")[1].click();
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.isRunning).toBe(true);
+    // timeLeft must NOT be reset — should stay at 1800 (30:00)
+    expect(store.timeLeft).toBe(1800);
+    expect(display.textContent).toBe("30:00");
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", {
+      periodInMinutes: 1 / 60,
+    });
+  });
+
+  test("clicking a DIFFERENT task while paused starts it fresh and resets the paused task", () => {
+    // Develop is paused with 30:00 left
+    chrome.storage.local.setMockStore({
+      timeLeft: 1800,
+      isRunning: false,
+      currentMode: "work",
+      currentTaskIndex: 1,
+      tasks: [
+        { name: "Reading", duration: 25 },
+        { name: "Develop", duration: 50 },
+      ],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    // Click Reading (index 0) — different task
+    taskBtnRow.querySelectorAll(".task-btn")[0].click();
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.isRunning).toBe(true);
+    expect(store.currentTaskIndex).toBe(0);
+    // Must reset to Reading's full duration (25 * 60 = 1500)
+    expect(store.timeLeft).toBe(1500);
+    expect(display.textContent).toBe("25:00");
+    expect(currentTaskTitle.textContent).toBe("🎯 Focus: Reading");
+  });
+
   // ── Locking — other buttons disabled while running ────────────────────────
 
   test("non-active task buttons are disabled when timer is running", () => {
