@@ -5,7 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const shortInput = document.getElementById("short-time");
   const longInput = document.getElementById("long-time");
   const cycleInput = document.getElementById("cycle-target");
-  const saveBtn = document.getElementById("save-btn");
+  const saveTasksBtn = document.getElementById("save-tasks-btn");
+  const saveBreakBtn = document.getElementById("save-break-btn");
 
   // Tab System Selectors
   const navSettings = document.getElementById("nav-settings");
@@ -150,25 +151,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  saveBtn.addEventListener("click", () => {
-    chrome.alarms.clear("pomodoroTimer");
-    const initialSeconds = localTasks[0].duration * 60;
+  // ── Save Tasks only (timer untouched) ─────────────────────────────────────
+  saveTasksBtn.addEventListener("click", () => {
+    chrome.storage.local.set({ tasks: localTasks }, () => {
+      alert("Tasks saved successfully!");
+    });
+  });
+
+  // ── Save Break & Schedule only (timer untouched) ───────────────────────────
+  saveBreakBtn.addEventListener("click", () => {
     chrome.storage.local.set(
       {
-        tasks: localTasks,
         shortBreak: parseInt(shortInput.value) || 5,
         longBreak: parseInt(longInput.value) || 15,
         cycleTarget: parseInt(cycleInput.value) || 4,
-        timeLeft: initialSeconds,
-        isRunning: false,
-        currentMode: "work",
-        currentTaskIndex: 0,
-        completedWorkSessions: 0,
       },
       () => {
-        chrome.action.setBadgeText({ text: `${localTasks[0].duration}m` });
-        chrome.action.setBadgeBackgroundColor({ color: "#e74c3c" });
-        alert("Settings saved successfully! Timer reset to your first task.");
+        alert("Break settings saved successfully!");
       },
     );
   });

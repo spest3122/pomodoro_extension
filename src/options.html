@@ -84,14 +84,16 @@
         margin-bottom: 8px;
         font-size: 0.95rem;
       }
-      #save-btn {
-        width: 100%;
+      .section-save-btn {
         background-color: #28a745;
         color: white;
         border: none;
-        padding: 12px;
-        font-size: 1rem;
+        padding: 8px 16px;
+        font-size: 0.9rem;
         border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-top: 10px;
       }
 
       /* Records styling elements */
@@ -170,13 +172,14 @@
           </button>
         </div>
         <div id="tasks-container"></div>
+        <button class="section-save-btn" id="save-tasks-btn">💾 Save Tasks</button>
       </div>
 
       <div
         class="section"
         style="border-top: 1px solid #ddd; padding-top: 15px"
       >
-        <h4>Break & Schedule Architecture</h4>
+        <h4>Break &amp; Schedule Architecture</h4>
         <label
           >Short Break Duration:
           <input type="number" id="short-time" min="1" /> minutes</label
@@ -189,9 +192,8 @@
           >Trigger Long Break After:
           <input type="number" id="cycle-target" min="1" /> focus blocks</label
         >
+        <button class="section-save-btn" id="save-break-btn">💾 Save Break Settings</button>
       </div>
-
-      <button id="save-btn">Save Configurations & Reset Timer</button>
     </div>
 
     <div id="content-records" class="tab-content">

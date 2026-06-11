@@ -1,5 +1,6 @@
 describe("options.js", () => {
-  let tasksContainer, addTaskBtn, shortInput, longInput, cycleInput, saveBtn;
+  let tasksContainer, addTaskBtn, shortInput, longInput, cycleInput;
+  let saveTasksBtn, saveBreakBtn;
   let navSettings, navRecords, contentSettings, contentRecords;
   let todayCountEl, historyLogContainer, clearHistoryBtn;
 
@@ -13,10 +14,11 @@ describe("options.js", () => {
       <div id="content-settings" class="active">
         <button id="add-task-btn">+ Add Task</button>
         <div id="tasks-container"></div>
+        <button id="save-tasks-btn">💾 Save Tasks</button>
         <input type="number" id="short-time" />
         <input type="number" id="long-time" />
         <input type="number" id="cycle-target" />
-        <button id="save-btn">Save Configurations</button>
+        <button id="save-break-btn">💾 Save Break Settings</button>
       </div>
 
       <div id="content-records">
@@ -31,7 +33,8 @@ describe("options.js", () => {
     shortInput = document.getElementById("short-time");
     longInput = document.getElementById("long-time");
     cycleInput = document.getElementById("cycle-target");
-    saveBtn = document.getElementById("save-btn");
+    saveTasksBtn = document.getElementById("save-tasks-btn");
+    saveBreakBtn = document.getElementById("save-break-btn");
 
     navSettings = document.getElementById("nav-settings");
     navRecords = document.getElementById("nav-records");
@@ -123,43 +126,78 @@ describe("options.js", () => {
     expect(rows[0].querySelector(".delete-btn").hasAttribute("disabled")).toBe(true);
   });
 
-  test("saves configurations and resets timer on save button click", () => {
+  test("Save Tasks button saves only the tasks list without touching timer or break settings", () => {
     chrome.storage.local.setMockStore({
       tasks: [{ name: "Reading", duration: 25 }],
       shortBreak: 5,
       longBreak: 15,
       cycleTarget: 4,
+      timeLeft: 900,
+      isRunning: true,
     });
 
     require("../src/options.js");
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
-    shortInput.value = "10";
-    longInput.value = "20";
-    cycleInput.value = "6";
-
-    // Edit task inline
+    // Edit task name inline
     const firstRow = tasksContainer.querySelector(".task-row");
     firstRow.querySelector(".task-name").value = "Testing Focus";
     firstRow.querySelector(".task-name").dispatchEvent(new Event("input"));
     firstRow.querySelector(".task-duration").value = "30";
     firstRow.querySelector(".task-duration").dispatchEvent(new Event("input"));
 
-    saveBtn.click();
+    saveTasksBtn.click();
 
-    expect(chrome.alarms.clear).toHaveBeenCalledWith("pomodoroTimer");
-    expect(global.alert).toHaveBeenCalledWith("Settings saved successfully! Timer reset to your first task.");
+    expect(global.alert).toHaveBeenCalledWith("Tasks saved successfully!");
 
     const store = chrome.storage.local.getMockStore();
+    // Tasks saved correctly
+    expect(store.tasks[0]).toEqual({ name: "Testing Focus", duration: 30 });
+    // Break settings untouched
+    expect(store.shortBreak).toBe(5);
+    expect(store.longBreak).toBe(15);
+    expect(store.cycleTarget).toBe(4);
+    // Timer untouched
+    expect(store.timeLeft).toBe(900);
+    expect(store.isRunning).toBe(true);
+    // No alarm was cleared
+    expect(chrome.alarms.clear).not.toHaveBeenCalled();
+  });
+
+  test("Save Break Settings button saves only break/schedule fields without touching tasks or timer", () => {
+    chrome.storage.local.setMockStore({
+      tasks: [{ name: "Reading", duration: 25 }],
+      shortBreak: 5,
+      longBreak: 15,
+      cycleTarget: 4,
+      timeLeft: 900,
+      isRunning: true,
+    });
+
+    require("../src/options.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    // Change break settings
+    shortInput.value = "10";
+    longInput.value = "20";
+    cycleInput.value = "6";
+
+    saveBreakBtn.click();
+
+    expect(global.alert).toHaveBeenCalledWith("Break settings saved successfully!");
+
+    const store = chrome.storage.local.getMockStore();
+    // Break settings saved correctly
     expect(store.shortBreak).toBe(10);
     expect(store.longBreak).toBe(20);
     expect(store.cycleTarget).toBe(6);
-    expect(store.tasks[0]).toEqual({ name: "Testing Focus", duration: 30 });
-    expect(store.timeLeft).toBe(30 * 60); // 1800s
-    expect(store.isRunning).toBe(false);
-
-    expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: "30m" });
-    expect(chrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#e74c3c" });
+    // Tasks untouched
+    expect(store.tasks[0]).toEqual({ name: "Reading", duration: 25 });
+    // Timer untouched
+    expect(store.timeLeft).toBe(900);
+    expect(store.isRunning).toBe(true);
+    // No alarm was cleared
+    expect(chrome.alarms.clear).not.toHaveBeenCalled();
   });
 
   test("switches tabs and loads/renders completed focus session history", () => {
