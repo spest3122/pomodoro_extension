@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const display = document.getElementById("time-left");
   const currentTaskTitle = document.getElementById("current-task-title");
   const taskBtnRow = document.getElementById("task-btn-row");
+  const shortBreakBtn = document.getElementById("short-break-btn");
+  const longBreakBtn = document.getElementById("long-break-btn");
   const pauseBtn = document.getElementById("pause-btn");
   const resetBtn = document.getElementById("reset-btn");
   const openSettingsLink = document.getElementById("open-settings");
@@ -11,15 +13,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── Boot: read state from storage ────────────────────────────────────────
   chrome.storage.local.get(
-    ["timeLeft", "isRunning", "tasks", "currentMode", "currentTaskIndex"],
+    ["timeLeft", "isRunning", "tasks", "currentMode", "currentTaskIndex",
+     "shortBreak", "longBreak"],
     (data) => {
       localTasks = data.tasks || [{ name: "Work 1", duration: 25 }];
       const currentIndex = data.currentTaskIndex || 0;
       const isRunning = !!data.isRunning;
+      const mode = data.currentMode || "work";
 
-      updateStatusTitle(data.currentMode, localTasks, currentIndex);
+      updateStatusTitle(mode, localTasks, currentIndex);
       updateUI(data.timeLeft);
-      renderTaskButtons(localTasks, currentIndex, isRunning);
+      renderAllButtons({ mode, isRunning, activeTaskIndex: currentIndex });
 
       if (isRunning) startUIInterval();
     },
@@ -42,42 +46,56 @@ document.addEventListener("DOMContentLoaded", () => {
     display.textContent = `${mins}:${secs}`;
   }
 
+  // ── Unified button state renderer ─────────────────────────────────────────
+  /**
+   * Drives the enabled/active state of ALL interactive buttons from one place.
+   *
+   * @param {object} state
+   *   mode           - "work" | "short-break" | "long-break"
+   *   isRunning      - bool
+   *   activeTaskIndex - number (index of current work task)
+   */
+  function renderAllButtons({ mode, isRunning, activeTaskIndex }) {
+    renderTaskButtons(localTasks, activeTaskIndex, mode, isRunning);
+    renderBreakButtons(mode, isRunning);
+  }
+
   // ── Task Buttons ──────────────────────────────────────────────────────────
   /**
-   * Renders one button per task.
-   *
    * Rules:
-   *  - Active task button = filled color
-   *  - When running: all other task buttons are disabled
-   *  - Click active button while RUNNING  → nothing (use Pause to stop)
-   *  - Click active button while PAUSED   → resume from current timeLeft
-   *  - Click different button while paused/idle → start that task fresh;
-   *                                               previously paused task resets
+   *  - Active task button = filled color (only meaningful when mode === "work")
+   *  - Running (any mode): non-active task buttons disabled
+   *  - Break running: ALL task buttons disabled
+   *  - Click active task while RUNNING  → nothing
+   *  - Click active task while PAUSED   → resume from stored timeLeft
+   *  - Click different task (idle/paused) → start fresh
    */
-  function renderTaskButtons(tasks, activeIndex, isRunning) {
+  function renderTaskButtons(tasks, activeIndex, mode, isRunning) {
     taskBtnRow.innerHTML = "";
+    const inBreak = mode === "short-break" || mode === "long-break";
+
     tasks.forEach((task, index) => {
       const btn = document.createElement("button");
-      const isActive = index === activeIndex;
+      const isActiveTask = mode === "work" && index === activeIndex;
 
-      btn.className = `task-btn task-btn-${index}` + (isActive ? " active" : "");
+      btn.className = `task-btn task-btn-${index}` + (isActiveTask ? " active" : "");
       btn.textContent = `${task.name} (${task.duration}min)`;
       btn.title = `${task.name} — ${task.duration} minutes`;
 
-      // Disable non-active buttons while timer is running
-      if (isRunning && !isActive) {
+      // Disable when: a break is actively RUNNING, OR timer is running on a different task
+      if ((inBreak && isRunning) || (isRunning && !isActiveTask)) {
         btn.disabled = true;
       }
 
       btn.addEventListener("click", () => {
-        // Active + running → do nothing (Pause is the only way to stop)
-        if (isActive && isRunning) return;
+        // Active work task running → do nothing
+        if (isActiveTask && isRunning) return;
 
         chrome.alarms.clear("pomodoroTimer");
         clearInterval(updateInterval);
 
-        if (isActive && !isRunning) {
-          // ── RESUME: same task was paused — continue from stored timeLeft ──
+        if (isActiveTask && !isRunning) {
+          // ── RESUME: same task was paused ──────────────────────────────────
           chrome.storage.local.get(["timeLeft"], (data) => {
             chrome.storage.local.set(
               { isRunning: true, currentMode: "work" },
@@ -85,13 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
                 updateUI(data.timeLeft);
                 updateStatusTitle("work", tasks, index);
-                renderTaskButtons(tasks, index, true);
+                renderAllButtons({ mode: "work", isRunning: true, activeTaskIndex: index });
                 startUIInterval();
               },
             );
           });
         } else {
-          // ── START FRESH: different task clicked — reset its time & start ──
+          // ── START FRESH: different task ───────────────────────────────────
           const seconds = task.duration * 60;
           chrome.storage.local.set(
             {
@@ -104,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
               chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
               updateUI(seconds);
               updateStatusTitle("work", tasks, index);
-              renderTaskButtons(tasks, index, true);
+              renderAllButtons({ mode: "work", isRunning: true, activeTaskIndex: index });
               startUIInterval();
             },
           );
@@ -115,27 +133,92 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ── Polling interval (updates display while running) ─────────────────────
+  // ── Break Buttons ─────────────────────────────────────────────────────────
+  /**
+   * Rules:
+   *  - Active break button = filled color
+   *  - Disabled when: a task or the OTHER break is running
+   *  - Clicking a break button starts that break fresh from stored duration
+   */
+  function renderBreakButtons(mode, isRunning) {
+    const shortActive = mode === "short-break";
+    const longActive  = mode === "long-break";
+    const taskRunning = mode === "work" && isRunning;
+
+    // Short break button state
+    shortBreakBtn.classList.toggle("active", shortActive);
+    shortBreakBtn.disabled = taskRunning || (isRunning && longActive);
+
+    // Long break button state
+    longBreakBtn.classList.toggle("active", longActive);
+    longBreakBtn.disabled = taskRunning || (isRunning && shortActive);
+  }
+
+  function startBreak(breakMode) {
+    chrome.alarms.clear("pomodoroTimer");
+    clearInterval(updateInterval);
+
+    chrome.storage.local.get(
+      ["shortBreak", "longBreak", "currentTaskIndex", "currentMode", "isRunning", "timeLeft"],
+      (data) => {
+        const activeTaskIndex = data.currentTaskIndex || 0;
+        const isPaused = !data.isRunning && data.currentMode === breakMode;
+
+        if (isPaused) {
+          // ── RESUME: same break was paused — continue from stored timeLeft ──
+          chrome.storage.local.set(
+            { isRunning: true },
+            () => {
+              chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+              updateUI(data.timeLeft);
+              updateStatusTitle(breakMode, localTasks, activeTaskIndex);
+              renderAllButtons({ mode: breakMode, isRunning: true, activeTaskIndex });
+              startUIInterval();
+            },
+          );
+        } else {
+          // ── START FRESH: different break or first click — reset duration ──
+          const duration = breakMode === "short-break"
+            ? (data.shortBreak || 5)
+            : (data.longBreak || 15);
+          const seconds = duration * 60;
+
+          chrome.storage.local.set(
+            { isRunning: true, currentMode: breakMode, timeLeft: seconds },
+            () => {
+              chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+              updateUI(seconds);
+              updateStatusTitle(breakMode, localTasks, activeTaskIndex);
+              renderAllButtons({ mode: breakMode, isRunning: true, activeTaskIndex });
+              startUIInterval();
+            },
+          );
+        }
+      },
+    );
+  }
+
+  shortBreakBtn.addEventListener("click", () => startBreak("short-break"));
+  longBreakBtn.addEventListener("click", () => startBreak("long-break"));
+
+  // ── Polling interval ──────────────────────────────────────────────────────
   function startUIInterval() {
     clearInterval(updateInterval);
     updateInterval = setInterval(() => {
       chrome.storage.local.get(
         ["timeLeft", "isRunning", "currentMode", "tasks", "currentTaskIndex"],
         (data) => {
+          const mode = data.currentMode || "work";
+          const isRunning = !!data.isRunning;
+          localTasks = data.tasks || localTasks;
+          const activeTaskIndex = data.currentTaskIndex || 0;
+
           updateUI(data.timeLeft);
-          updateStatusTitle(
-            data.currentMode,
-            data.tasks || localTasks,
-            data.currentTaskIndex || 0,
-          );
-          // If background stopped the timer (break started etc.), unlock buttons
-          if (!data.isRunning) {
+          updateStatusTitle(mode, localTasks, activeTaskIndex);
+
+          if (!isRunning) {
             clearInterval(updateInterval);
-            renderTaskButtons(
-              data.tasks || localTasks,
-              data.currentTaskIndex || 0,
-              false,
-            );
+            renderAllButtons({ mode, isRunning: false, activeTaskIndex });
           }
         },
       );
@@ -147,13 +230,14 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.alarms.clear("pomodoroTimer");
     chrome.storage.local.set({ isRunning: false });
     clearInterval(updateInterval);
-    // Re-render buttons in unlocked state so user can switch tasks
-    chrome.storage.local.get(["tasks", "currentTaskIndex"], (data) => {
-      renderTaskButtons(
-        data.tasks || localTasks,
-        data.currentTaskIndex || 0,
-        false,
-      );
+    chrome.storage.local.get(["tasks", "currentTaskIndex", "currentMode"], (data) => {
+      const mode = data.currentMode || "work";
+      localTasks = data.tasks || localTasks;
+      renderAllButtons({
+        mode,
+        isRunning: false,
+        activeTaskIndex: data.currentTaskIndex || 0,
+      });
     });
   });
 
@@ -161,14 +245,27 @@ document.addEventListener("DOMContentLoaded", () => {
   resetBtn.addEventListener("click", () => {
     chrome.alarms.clear("pomodoroTimer");
     clearInterval(updateInterval);
-    chrome.storage.local.get(["tasks", "currentTaskIndex"], (data) => {
-      const list = data.tasks || localTasks;
-      const idx = data.currentTaskIndex || 0;
-      const seconds = list[idx].duration * 60;
-      chrome.storage.local.set({ isRunning: false, timeLeft: seconds });
-      updateUI(seconds);
-      renderTaskButtons(list, idx, false);
-    });
+    chrome.storage.local.get(
+      ["tasks", "currentTaskIndex", "currentMode", "shortBreak", "longBreak"],
+      (data) => {
+        const mode = data.currentMode || "work";
+        const activeTaskIndex = data.currentTaskIndex || 0;
+        localTasks = data.tasks || localTasks;
+
+        let seconds;
+        if (mode === "short-break") {
+          seconds = (data.shortBreak || 5) * 60;
+        } else if (mode === "long-break") {
+          seconds = (data.longBreak || 15) * 60;
+        } else {
+          seconds = localTasks[activeTaskIndex].duration * 60;
+        }
+
+        chrome.storage.local.set({ isRunning: false, timeLeft: seconds });
+        updateUI(seconds);
+        renderAllButtons({ mode, isRunning: false, activeTaskIndex });
+      },
+    );
   });
 
   // ── Settings link ─────────────────────────────────────────────────────────

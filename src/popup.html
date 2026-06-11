@@ -22,7 +22,7 @@
         margin-bottom: 10px;
       }
 
-      /* Task buttons — replace Start */
+      /* ── Task buttons ── */
       #task-btn-row {
         display: flex;
         flex-wrap: wrap;
@@ -54,11 +54,41 @@
         cursor: not-allowed;
       }
       /* Per-task color palette */
-      .task-btn-0 { --task-color: #e74c3c; } /* tomato red   */
-      .task-btn-1 { --task-color: #6366f1; } /* indigo       */
-      .task-btn-2 { --task-color: #f59e0b; } /* amber        */
+      .task-btn-0 { --task-color: #e74c3c; } /* tomato red */
+      .task-btn-1 { --task-color: #6366f1; } /* indigo     */
+      .task-btn-2 { --task-color: #f59e0b; } /* amber      */
 
-      /* Pause / Reset row */
+      /* ── Break buttons ── */
+      #break-btn-row {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        margin-bottom: 8px;
+      }
+      .break-btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        cursor: pointer;
+        border: 2px solid var(--break-color);
+        background: #fff;
+        color: var(--break-color);
+        border-radius: 6px;
+        transition: background 0.15s, color 0.15s, opacity 0.15s;
+      }
+      .break-btn.active {
+        background: var(--break-color);
+        color: #fff;
+      }
+      .break-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      #short-break-btn { --break-color: #0ea5e9; } /* sky blue  */
+      #long-break-btn  { --break-color: #10b981; } /* emerald   */
+
+      /* ── Pause / Reset row ── */
       .controls-row {
         display: flex;
         gap: 6px;
@@ -96,8 +126,14 @@
     <div id="current-task-title">Loading...</div>
     <div class="timer-display" id="time-left">25:00</div>
 
-    <!-- One button per custom task (replaces Start) -->
+    <!-- One button per custom task -->
     <div id="task-btn-row"></div>
+
+    <!-- Short Break / Long Break -->
+    <div id="break-btn-row">
+      <button class="break-btn" id="short-break-btn">☕ Short Break</button>
+      <button class="break-btn" id="long-break-btn">🛋️ Long Break</button>
+    </div>
 
     <!-- Pause + Reset -->
     <div class="controls-row">

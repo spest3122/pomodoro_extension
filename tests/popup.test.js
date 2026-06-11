@@ -1,23 +1,27 @@
 describe("popup.js", () => {
-  let display, currentTaskTitle, taskBtnRow, pauseBtn, resetBtn, openSettingsLink;
+  let display, currentTaskTitle, taskBtnRow;
+  let shortBreakBtn, longBreakBtn, pauseBtn, resetBtn, openSettingsLink;
 
   beforeEach(() => {
     global.clearAllEventListeners();
-    // DOM matches the new popup.html structure (no start-btn, has task-btn-row)
     document.body.innerHTML = `
       <div id="current-task-title">Loading...</div>
       <div id="time-left">25:00</div>
       <div id="task-btn-row"></div>
+      <button class="break-btn" id="short-break-btn">☕ Short Break</button>
+      <button class="break-btn" id="long-break-btn">🛋️ Long Break</button>
       <button id="pause-btn">Pause</button>
       <button id="reset-btn">Reset</button>
       <span id="open-settings">⚙️ Open Settings Board</span>
     `;
 
-    display = document.getElementById("time-left");
+    display          = document.getElementById("time-left");
     currentTaskTitle = document.getElementById("current-task-title");
-    taskBtnRow = document.getElementById("task-btn-row");
-    pauseBtn = document.getElementById("pause-btn");
-    resetBtn = document.getElementById("reset-btn");
+    taskBtnRow       = document.getElementById("task-btn-row");
+    shortBreakBtn    = document.getElementById("short-break-btn");
+    longBreakBtn     = document.getElementById("long-break-btn");
+    pauseBtn         = document.getElementById("pause-btn");
+    resetBtn         = document.getElementById("reset-btn");
     openSettingsLink = document.getElementById("open-settings");
 
     jest.resetModules();
@@ -129,7 +133,7 @@ describe("popup.js", () => {
     expect(buttons[1].classList.contains("active")).toBe(true);
   });
 
-  // ── Task button click — start task ────────────────────────────────────────
+  // ── Task button click — start / resume ────────────────────────────────────
 
   test("clicking an idle task button starts the timer for that task", () => {
     chrome.storage.local.setMockStore({
@@ -146,9 +150,7 @@ describe("popup.js", () => {
     require("../src/popup.js");
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
-    // Click the second task button (Develop)
-    const buttons = taskBtnRow.querySelectorAll(".task-btn");
-    buttons[1].click();
+    taskBtnRow.querySelectorAll(".task-btn")[1].click();
 
     const store = chrome.storage.local.getMockStore();
     expect(store.isRunning).toBe(true);
@@ -182,36 +184,6 @@ describe("popup.js", () => {
   });
 
   test("clicking the active task button while PAUSED resumes from stored timeLeft", () => {
-    // Develop was paused with 30:00 left (not the full 50:00)
-    chrome.storage.local.setMockStore({
-      timeLeft: 1800, // 30:00 remaining
-      isRunning: false,
-      currentMode: "work",
-      currentTaskIndex: 1,
-      tasks: [
-        { name: "Reading", duration: 25 },
-        { name: "Develop", duration: 50 },
-      ],
-    });
-
-    require("../src/popup.js");
-    document.dispatchEvent(new Event("DOMContentLoaded"));
-
-    // Click the active (Develop) button to resume
-    taskBtnRow.querySelectorAll(".task-btn")[1].click();
-
-    const store = chrome.storage.local.getMockStore();
-    expect(store.isRunning).toBe(true);
-    // timeLeft must NOT be reset — should stay at 1800 (30:00)
-    expect(store.timeLeft).toBe(1800);
-    expect(display.textContent).toBe("30:00");
-    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", {
-      periodInMinutes: 1 / 60,
-    });
-  });
-
-  test("clicking a DIFFERENT task while paused starts it fresh and resets the paused task", () => {
-    // Develop is paused with 30:00 left
     chrome.storage.local.setMockStore({
       timeLeft: 1800,
       isRunning: false,
@@ -226,21 +198,45 @@ describe("popup.js", () => {
     require("../src/popup.js");
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
-    // Click Reading (index 0) — different task
+    taskBtnRow.querySelectorAll(".task-btn")[1].click();
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.isRunning).toBe(true);
+    expect(store.timeLeft).toBe(1800);
+    expect(display.textContent).toBe("30:00");
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", {
+      periodInMinutes: 1 / 60,
+    });
+  });
+
+  test("clicking a DIFFERENT task while paused starts it fresh", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 1800,
+      isRunning: false,
+      currentMode: "work",
+      currentTaskIndex: 1,
+      tasks: [
+        { name: "Reading", duration: 25 },
+        { name: "Develop", duration: 50 },
+      ],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
     taskBtnRow.querySelectorAll(".task-btn")[0].click();
 
     const store = chrome.storage.local.getMockStore();
     expect(store.isRunning).toBe(true);
     expect(store.currentTaskIndex).toBe(0);
-    // Must reset to Reading's full duration (25 * 60 = 1500)
     expect(store.timeLeft).toBe(1500);
     expect(display.textContent).toBe("25:00");
     expect(currentTaskTitle.textContent).toBe("🎯 Focus: Reading");
   });
 
-  // ── Locking — other buttons disabled while running ────────────────────────
+  // ── Locking — task buttons disabled when timer runs ───────────────────────
 
-  test("non-active task buttons are disabled when timer is running", () => {
+  test("non-active task buttons are disabled when a work task is running", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 1500,
       isRunning: true,
@@ -256,8 +252,8 @@ describe("popup.js", () => {
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
     const buttons = taskBtnRow.querySelectorAll(".task-btn");
-    expect(buttons[0].disabled).toBe(false); // active task — enabled
-    expect(buttons[1].disabled).toBe(true);  // other task — disabled
+    expect(buttons[0].disabled).toBe(false);
+    expect(buttons[1].disabled).toBe(true);
   });
 
   test("clicking the active running task button does nothing", () => {
@@ -275,8 +271,229 @@ describe("popup.js", () => {
     const initialCallCount = chrome.alarms.create.mock.calls.length;
     taskBtnRow.querySelectorAll(".task-btn")[0].click();
 
-    // No new alarm should have been created
     expect(chrome.alarms.create.mock.calls.length).toBe(initialCallCount);
+  });
+
+  // ── Break buttons — idle/paused state ────────────────────────────────────
+
+  test("break buttons are both enabled when timer is idle", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 1500,
+      isRunning: false,
+      currentMode: "work",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(shortBreakBtn.disabled).toBe(false);
+    expect(longBreakBtn.disabled).toBe(false);
+  });
+
+  test("clicking short break button starts a short-break timer", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 1500,
+      isRunning: false,
+      currentMode: "work",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+      shortBreak: 5,
+      longBreak: 15,
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    shortBreakBtn.click();
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.isRunning).toBe(true);
+    expect(store.currentMode).toBe("short-break");
+    expect(store.timeLeft).toBe(5 * 60);
+    expect(display.textContent).toBe("05:00");
+    expect(currentTaskTitle.textContent).toBe("☕ Short Break");
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", {
+      periodInMinutes: 1 / 60,
+    });
+  });
+
+  test("clicking long break button starts a long-break timer", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 1500,
+      isRunning: false,
+      currentMode: "work",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+      shortBreak: 5,
+      longBreak: 15,
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    longBreakBtn.click();
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.isRunning).toBe(true);
+    expect(store.currentMode).toBe("long-break");
+    expect(store.timeLeft).toBe(15 * 60);
+    expect(display.textContent).toBe("15:00");
+    expect(currentTaskTitle.textContent).toBe("🛋️ Long Break");
+  });
+
+  test("clicking short break while PAUSED resumes from stored timeLeft (regression)", () => {
+    // Short break was paused with 3:00 remaining (not the full 5:00)
+    chrome.storage.local.setMockStore({
+      timeLeft: 180,
+      isRunning: false,
+      currentMode: "short-break",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+      shortBreak: 5,
+      longBreak: 15,
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    shortBreakBtn.click();
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.isRunning).toBe(true);
+    expect(store.currentMode).toBe("short-break");
+    // Must NOT reset to 5*60=300 — must stay at 180 (3:00)
+    expect(store.timeLeft).toBe(180);
+    expect(display.textContent).toBe("03:00");
+  });
+
+  test("clicking long break while PAUSED resumes from stored timeLeft (regression)", () => {
+    // Long break was paused with 8:00 remaining (not the full 15:00)
+    chrome.storage.local.setMockStore({
+      timeLeft: 480,
+      isRunning: false,
+      currentMode: "long-break",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+      shortBreak: 5,
+      longBreak: 15,
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    longBreakBtn.click();
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.isRunning).toBe(true);
+    expect(store.currentMode).toBe("long-break");
+    // Must NOT reset to 15*60=900 — must stay at 480 (8:00)
+    expect(store.timeLeft).toBe(480);
+    expect(display.textContent).toBe("08:00");
+  });
+
+  // ── Break buttons — locked while task is running ──────────────────────────
+
+  test("break buttons are disabled when a work task is running", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 1500,
+      isRunning: true,
+      currentMode: "work",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(shortBreakBtn.disabled).toBe(true);
+    expect(longBreakBtn.disabled).toBe(true);
+  });
+
+  test("short break button is active and long break is disabled while short break runs", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 300,
+      isRunning: true,
+      currentMode: "short-break",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(shortBreakBtn.classList.contains("active")).toBe(true);
+    expect(shortBreakBtn.disabled).toBe(false);
+    expect(longBreakBtn.classList.contains("active")).toBe(false);
+    expect(longBreakBtn.disabled).toBe(true);
+  });
+
+  test("long break button is active and short break is disabled while long break runs", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 900,
+      isRunning: true,
+      currentMode: "long-break",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(longBreakBtn.classList.contains("active")).toBe(true);
+    expect(longBreakBtn.disabled).toBe(false);
+    expect(shortBreakBtn.classList.contains("active")).toBe(false);
+    expect(shortBreakBtn.disabled).toBe(true);
+  });
+
+  test("task buttons are ALL disabled while a break is running", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 300,
+      isRunning: true,
+      currentMode: "short-break",
+      currentTaskIndex: 0,
+      tasks: [
+        { name: "Reading", duration: 25 },
+        { name: "Develop", duration: 50 },
+      ],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    const taskBtns = taskBtnRow.querySelectorAll(".task-btn");
+    taskBtns.forEach((btn) => expect(btn.disabled).toBe(true));
+  });
+
+  test("task buttons re-enable after pausing a break (regression)", () => {
+    // Start with short-break running
+    chrome.storage.local.setMockStore({
+      timeLeft: 300,
+      isRunning: true,
+      currentMode: "short-break",
+      currentTaskIndex: 0,
+      tasks: [
+        { name: "Reading", duration: 25 },
+        { name: "Develop", duration: 50 },
+      ],
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    // Confirm task buttons are locked while break is running
+    taskBtnRow.querySelectorAll(".task-btn").forEach((btn) =>
+      expect(btn.disabled).toBe(true)
+    );
+
+    // Pause the break
+    pauseBtn.click();
+
+    // Task buttons must be re-enabled after pausing
+    taskBtnRow.querySelectorAll(".task-btn").forEach((btn) =>
+      expect(btn.disabled).toBe(false)
+    );
   });
 
   // ── Pause ─────────────────────────────────────────────────────────────────
@@ -299,7 +516,7 @@ describe("popup.js", () => {
     expect(chrome.storage.local.getMockStore().isRunning).toBe(false);
   });
 
-  test("pause button re-enables all task buttons", () => {
+  test("pause re-enables task and break buttons", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 1499,
       isRunning: true,
@@ -314,18 +531,19 @@ describe("popup.js", () => {
     require("../src/popup.js");
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
-    // Develop is disabled while running
     expect(taskBtnRow.querySelectorAll(".task-btn")[1].disabled).toBe(true);
+    expect(shortBreakBtn.disabled).toBe(true);
 
     pauseBtn.click();
 
-    // After pause, Develop should be re-enabled
     expect(taskBtnRow.querySelectorAll(".task-btn")[1].disabled).toBe(false);
+    expect(shortBreakBtn.disabled).toBe(false);
+    expect(longBreakBtn.disabled).toBe(false);
   });
 
   // ── Reset ─────────────────────────────────────────────────────────────────
 
-  test("reset button resets time to current task duration and stops timer", () => {
+  test("reset button resets work task time and stops timer", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 120,
       isRunning: true,
@@ -345,7 +563,27 @@ describe("popup.js", () => {
     expect(display.textContent).toBe("25:00");
   });
 
-  test("reset button re-enables all task buttons", () => {
+  test("reset during short break resets to short break duration", () => {
+    chrome.storage.local.setMockStore({
+      timeLeft: 60,
+      isRunning: true,
+      currentMode: "short-break",
+      currentTaskIndex: 0,
+      tasks: [{ name: "Reading", duration: 25 }],
+      shortBreak: 5,
+      longBreak: 15,
+    });
+
+    require("../src/popup.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    resetBtn.click();
+
+    expect(chrome.storage.local.getMockStore().timeLeft).toBe(5 * 60);
+    expect(display.textContent).toBe("05:00");
+  });
+
+  test("reset re-enables all buttons", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 120,
       isRunning: true,
@@ -360,11 +598,11 @@ describe("popup.js", () => {
     require("../src/popup.js");
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
-    expect(taskBtnRow.querySelectorAll(".task-btn")[1].disabled).toBe(true);
-
     resetBtn.click();
 
     expect(taskBtnRow.querySelectorAll(".task-btn")[1].disabled).toBe(false);
+    expect(shortBreakBtn.disabled).toBe(false);
+    expect(longBreakBtn.disabled).toBe(false);
   });
 
   // ── Settings link ─────────────────────────────────────────────────────────
