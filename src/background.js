@@ -12,6 +12,7 @@ chrome.runtime.onInstalled.addListener(() => {
     currentMode: "work",
     currentTaskIndex: 0,
     completedWorkSessions: 0,
+    lastSessionDate: "",
   });
   updateBadge(25 * 60, "work");
 });
@@ -39,6 +40,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         "timeLeft",
         "currentMode",
         "completedWorkSessions",
+        "lastSessionDate",
         "cycleTarget",
         "tasks",
         "currentTaskIndex",
@@ -51,10 +53,11 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         if (time <= 0) {
           chrome.alarms.clear("pomodoroTimer");
 
-          let nextMode = "work";
-          let nextCount = data.completedWorkSessions;
-
           if (data.currentMode === "work") {
+            // Reset completedWorkSessions if the day has changed
+            const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
+            let nextCount =
+              data.lastSessionDate === today ? data.completedWorkSessions : 0;
             nextCount++;
 
             chrome.storage.local.get({ history: [] }, (historyData) => {
@@ -77,55 +80,72 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             });
 
             const target = data.cycleTarget || 4;
-            if (nextCount % target === 0) {
-              nextMode = "long-break";
-            } else {
-              nextMode = "short-break";
-            }
-          } else {
-            // If a break ended, we transition into selection mode
-            nextMode = "work";
-          }
+            let nextMode = (nextCount % target === 0) ? "long-break" : "short-break";
 
-          let nextTimeLeft = 25 * 60;
-          if (nextMode === "short-break") {
-            nextTimeLeft = (data.shortBreak || 5) * 60;
-          } else if (nextMode === "long-break") {
-            nextTimeLeft = (data.longBreak || 15) * 60;
+            let nextTimeLeft = 25 * 60;
+            if (nextMode === "short-break") {
+              nextTimeLeft = (data.shortBreak || 5) * 60;
+            } else if (nextMode === "long-break") {
+              nextTimeLeft = (data.longBreak || 15) * 60;
+            }
+
+            chrome.storage.local.set(
+              {
+                currentMode: nextMode,
+                completedWorkSessions: nextCount,
+                lastSessionDate: today,
+                isRunning: false,
+                timeLeft: nextTimeLeft,
+              },
+              () => {
+                updateBadge(0, data.currentMode);
+                // 1. Open the break tab
+                chrome.tabs.create(
+                  { url: chrome.runtime.getURL("break.html") },
+                  (newTab) => {
+                    // 2. Query the current window that contains this new tab
+                    chrome.windows.get(newTab.windowId, (currentWindow) => {
+                      // 3. FORCE Chrome to bring the window into active viewport focus
+                      chrome.windows.update(newTab.windowId, {
+                        focused: true,
+                        drawAttention: true, // Causes taskbar/dock icon to flash on Windows/Mac
+                      });
+                    });
+                  },
+                );
+              },
+            );
           } else {
+            // Break ended → return to work mode
             const tasksList = data.tasks || [
               { name: "Work Session", duration: 25 },
             ];
             const currentTaskIdx = data.currentTaskIndex || 0;
             const nextTaskDuration = tasksList[currentTaskIdx]?.duration || 25;
-            nextTimeLeft = nextTaskDuration * 60;
-          }
+            const nextTimeLeft = nextTaskDuration * 60;
 
-          chrome.storage.local.set(
-            {
-              currentMode: nextMode,
-              completedWorkSessions: nextCount,
-              isRunning: false,
-              timeLeft: nextTimeLeft,
-            },
-            () => {
-              updateBadge(0, data.currentMode);
-              // 1. Open the break tab
-              chrome.tabs.create(
-                { url: chrome.runtime.getURL("break.html") },
-                (newTab) => {
-                  // 2. Query the current window that contains this new tab
-                  chrome.windows.get(newTab.windowId, (currentWindow) => {
-                    // 3. FORCE Chrome to bring the window into active viewport focus
-                    chrome.windows.update(newTab.windowId, {
-                      focused: true,
-                      drawAttention: true, // Causes taskbar/dock icon to flash on Windows/Mac
+            chrome.storage.local.set(
+              {
+                currentMode: "work",
+                isRunning: false,
+                timeLeft: nextTimeLeft,
+              },
+              () => {
+                updateBadge(0, data.currentMode);
+                chrome.tabs.create(
+                  { url: chrome.runtime.getURL("break.html") },
+                  (newTab) => {
+                    chrome.windows.get(newTab.windowId, (currentWindow) => {
+                      chrome.windows.update(newTab.windowId, {
+                        focused: true,
+                        drawAttention: true,
+                      });
                     });
-                  });
-                },
-              );
-            },
-          );
+                  },
+                );
+              },
+            );
+          }
         } else {
           chrome.storage.local.set({ timeLeft: time });
           updateBadge(time, data.currentMode);

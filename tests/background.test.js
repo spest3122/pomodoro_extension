@@ -20,6 +20,7 @@ describe("background.js", () => {
     expect(store.currentMode).toBe("work");
     expect(store.currentTaskIndex).toBe(0);
     expect(store.completedWorkSessions).toBe(0);
+    expect(store.lastSessionDate).toBe("");
     expect(store.tasks).toEqual([
       { name: "Reading", duration: 25 },
       { name: "Develop", duration: 50 },
@@ -83,10 +84,12 @@ describe("background.js", () => {
   });
 
   test("onAlarm transition to long break when completedWorkSessions reaches cycleTarget", () => {
+    const today = new Date().toLocaleDateString("en-CA");
     chrome.storage.local.setMockStore({
       timeLeft: 1,
       currentMode: "work",
       completedWorkSessions: 3, // completedWorkSessions will increment to 4
+      lastSessionDate: today,   // same day so no reset
       cycleTarget: 4,
       history: [],
     });
@@ -114,6 +117,7 @@ describe("background.js", () => {
 
     const store = chrome.storage.local.getMockStore();
     expect(store.currentMode).toBe("work");
+    // completedWorkSessions must NOT change when a break ends
     expect(store.completedWorkSessions).toBe(1);
     expect(store.timeLeft).toBe(1500);
     expect(store.isRunning).toBe(false);
@@ -137,8 +141,135 @@ describe("background.js", () => {
 
     const store = chrome.storage.local.getMockStore();
     expect(store.currentMode).toBe("work");
+    // completedWorkSessions must NOT change when a break ends
     expect(store.completedWorkSessions).toBe(1);
     expect(store.timeLeft).toBe(45 * 60);
     expect(store.isRunning).toBe(false);
+  });
+
+  // ── Daily reset ──────────────────────────────────────────────────────────
+  describe("daily reset of completedWorkSessions", () => {
+    const TODAY = "2026-06-12"; // fixed date used across all cases
+
+    beforeEach(() => {
+      // Pin the instance toLocaleDateString while keeping Date.now and new Date() numeric form intact
+      const OriginalDate = global.Date;
+      jest.spyOn(global, "Date").mockImplementation((...args) => {
+        if (args.length === 0) {
+          const instance = new OriginalDate();
+          instance.toLocaleDateString = (locale) =>
+            locale === "en-CA" ? TODAY : instance.toLocaleDateString.call(new OriginalDate(), locale);
+          return instance;
+        }
+        return new OriginalDate(...args);
+      });
+      // Preserve static methods
+      global.Date.now = OriginalDate.now.bind(OriginalDate);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test("same day: continues counting from stored completedWorkSessions", () => {
+      chrome.storage.local.setMockStore({
+        timeLeft: 1,
+        currentMode: "work",
+        completedWorkSessions: 2,
+        lastSessionDate: TODAY, // same day
+        cycleTarget: 4,
+        history: [],
+      });
+
+      require("../src/background.js");
+      chrome.triggerAlarm({ name: "pomodoroTimer" });
+
+      const store = chrome.storage.local.getMockStore();
+      // count must continue from 2 → 3 (not reset)
+      expect(store.completedWorkSessions).toBe(3);
+      expect(store.lastSessionDate).toBe(TODAY);
+      expect(store.currentMode).toBe("short-break");
+    });
+
+    test("new day: resets completedWorkSessions to 1 (0 + first session)", () => {
+      chrome.storage.local.setMockStore({
+        timeLeft: 1,
+        currentMode: "work",
+        completedWorkSessions: 5,       // yesterday's count
+        lastSessionDate: "2026-06-11",  // yesterday
+        cycleTarget: 4,
+        history: [],
+      });
+
+      require("../src/background.js");
+      chrome.triggerAlarm({ name: "pomodoroTimer" });
+
+      const store = chrome.storage.local.getMockStore();
+      // must reset to 0 then increment → 1
+      expect(store.completedWorkSessions).toBe(1);
+      expect(store.lastSessionDate).toBe(TODAY);
+      expect(store.currentMode).toBe("short-break");
+    });
+
+    test("new day: cycleTarget uses the fresh count, not yesterday's", () => {
+      // Yesterday had 3 sessions (3 % 4 !== 0 so it would have been short-break),
+      // but after reset count = 0+1 = 1, which is still short-break.
+      // Test the edge case: yesterday = cycleTarget-1 (3); without reset it
+      // would fire long-break at count=4, but with reset count=1 → short-break.
+      chrome.storage.local.setMockStore({
+        timeLeft: 1,
+        currentMode: "work",
+        completedWorkSessions: 3,       // if NOT reset → would reach cycleTarget
+        lastSessionDate: "2026-06-11",  // yesterday
+        cycleTarget: 4,
+        history: [],
+      });
+
+      require("../src/background.js");
+      chrome.triggerAlarm({ name: "pomodoroTimer" });
+
+      const store = chrome.storage.local.getMockStore();
+      expect(store.completedWorkSessions).toBe(1);
+      // Should be short-break (1 % 4 !== 0), NOT long-break
+      expect(store.currentMode).toBe("short-break");
+    });
+
+    test("new day: lastSessionDate is absent (first ever install) — treats as new day", () => {
+      chrome.storage.local.setMockStore({
+        timeLeft: 1,
+        currentMode: "work",
+        completedWorkSessions: 0,
+        // lastSessionDate intentionally missing — simulates fresh install
+        cycleTarget: 4,
+        history: [],
+      });
+
+      require("../src/background.js");
+      chrome.triggerAlarm({ name: "pomodoroTimer" });
+
+      const store = chrome.storage.local.getMockStore();
+      expect(store.completedWorkSessions).toBe(1);
+      expect(store.lastSessionDate).toBe(TODAY);
+    });
+
+    test("break completion does not update lastSessionDate", () => {
+      chrome.storage.local.setMockStore({
+        timeLeft: 1,
+        currentMode: "short-break",
+        completedWorkSessions: 2,
+        lastSessionDate: "2026-06-11",  // yesterday — should remain unchanged
+        cycleTarget: 4,
+      });
+
+      require("../src/background.js");
+      chrome.triggerAlarm({ name: "pomodoroTimer" });
+
+      const store = chrome.storage.local.getMockStore();
+      // Break ended → work mode; lastSessionDate must NOT be written for breaks
+      expect(store.currentMode).toBe("work");
+      // completedWorkSessions unchanged after a break
+      expect(store.completedWorkSessions).toBe(2);
+      expect(store.lastSessionDate).toBe("2026-06-11");
+    });
   });
 });
