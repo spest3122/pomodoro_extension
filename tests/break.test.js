@@ -119,4 +119,56 @@ describe("break.js", () => {
     expect(chrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#e74c3c" });
     expect(chrome.tabs.getCurrent).toHaveBeenCalled();
   });
+
+  test("plays sound when work session completes and soundWork is true", () => {
+    chrome.storage.local.setMockStore({
+      currentMode: "short-break",
+      lastCompletedMode: "work",
+      soundWork: true
+    });
+
+    require("../src/break.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(window.AudioContext).toHaveBeenCalled();
+  });
+
+  test("does not play sound when work session completes and soundWork is false", () => {
+    chrome.storage.local.setMockStore({
+      currentMode: "short-break",
+      lastCompletedMode: "work",
+      soundWork: false
+    });
+
+    require("../src/break.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(window.AudioContext).not.toHaveBeenCalled();
+  });
+
+  test("plays sound when short break completes and soundShortBreak is true", () => {
+    chrome.storage.local.setMockStore({
+      currentMode: "work",
+      lastCompletedMode: "short-break",
+      soundShortBreak: true
+    });
+
+    require("../src/break.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(window.AudioContext).toHaveBeenCalled();
+  });
+
+  test("does not play sound when long break completes and soundLongBreak is false", () => {
+    chrome.storage.local.setMockStore({
+      currentMode: "work",
+      lastCompletedMode: "long-break",
+      soundLongBreak: false
+    });
+
+    require("../src/break.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    expect(window.AudioContext).not.toHaveBeenCalled();
+  });
 });

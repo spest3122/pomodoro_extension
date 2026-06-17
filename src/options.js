@@ -2,11 +2,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Selector Bindings
   const tasksContainer = document.getElementById("tasks-container");
   const addTaskBtn = document.getElementById("add-task-btn");
+  const cycleInput = document.getElementById("cycle-target");
   const shortInput = document.getElementById("short-time");
   const longInput = document.getElementById("long-time");
-  const cycleInput = document.getElementById("cycle-target");
+  const soundWork = document.getElementById("sound-work");
+  const soundShortBreak = document.getElementById("sound-short-break");
+  const soundLongBreak = document.getElementById("sound-long-break");
   const saveTasksBtn = document.getElementById("save-tasks-btn");
   const saveBreakBtn = document.getElementById("save-break-btn");
+  const saveSoundBtn = document.getElementById("save-sound-btn");
 
   // Tab System Selectors
   const navSettings = document.getElementById("nav-settings");
@@ -106,12 +110,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- EXISTING TASK SETTINGS LOGIC KEEPERS ---
   chrome.storage.local.get(
-    ["tasks", "shortBreak", "longBreak", "cycleTarget"],
+    ["tasks", "shortBreak", "longBreak", "cycleTarget", "soundWork", "soundShortBreak", "soundLongBreak"],
     (data) => {
       localTasks = data.tasks || [{ name: "Work 1", duration: 25 }];
       shortInput.value = data.shortBreak || 5;
       longInput.value = data.longBreak || 15;
       cycleInput.value = data.cycleTarget || 4;
+      soundWork.checked = data.soundWork !== false; // Default true
+      soundShortBreak.checked = data.soundShortBreak !== false;
+      soundLongBreak.checked = data.soundLongBreak !== false;
       renderTasks();
     },
   );
@@ -168,6 +175,20 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       () => {
         alert("Break settings saved successfully!");
+      },
+    );
+  });
+
+  // ── Save Sound Settings ──────────────────────────────────────────────────
+  saveSoundBtn.addEventListener("click", () => {
+    chrome.storage.local.set(
+      {
+        soundWork: soundWork.checked,
+        soundShortBreak: soundShortBreak.checked,
+        soundLongBreak: soundLongBreak.checked
+      },
+      () => {
+        alert("Sound settings saved successfully!");
       },
     );
   });

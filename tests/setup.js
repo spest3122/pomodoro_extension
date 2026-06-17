@@ -129,3 +129,23 @@ global.clearAllEventListeners = () => {
   });
   winListeners.length = 0;
 };
+
+// Mock AudioContext
+global.window.AudioContext = jest.fn().mockImplementation(() => {
+  return {
+    createOscillator: jest.fn(() => ({
+      type: 'sine',
+      frequency: { setValueAtTime: jest.fn() },
+      connect: jest.fn(),
+      start: jest.fn(),
+      stop: jest.fn(),
+    })),
+    createGain: jest.fn(() => ({
+      gain: { setValueAtTime: jest.fn(), exponentialRampToValueAtTime: jest.fn() },
+      connect: jest.fn(),
+    })),
+    destination: {},
+    currentTime: 0,
+  };
+});
+global.window.webkitAudioContext = global.window.AudioContext;

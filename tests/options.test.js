@@ -1,6 +1,7 @@
 describe("options.js", () => {
   let tasksContainer, addTaskBtn, shortInput, longInput, cycleInput;
   let saveTasksBtn, saveBreakBtn;
+  let soundWork, soundShortBreak, soundLongBreak, saveSoundBtn;
   let navSettings, navRecords, contentSettings, contentRecords;
   let todayCountEl, historyLogContainer, clearHistoryBtn;
 
@@ -19,6 +20,10 @@ describe("options.js", () => {
         <input type="number" id="long-time" />
         <input type="number" id="cycle-target" />
         <button id="save-break-btn">💾 Save Break Settings</button>
+        <input type="checkbox" id="sound-work" />
+        <input type="checkbox" id="sound-short-break" />
+        <input type="checkbox" id="sound-long-break" />
+        <button id="save-sound-btn">💾 Save Sound Settings</button>
       </div>
 
       <div id="content-records">
@@ -35,6 +40,10 @@ describe("options.js", () => {
     cycleInput = document.getElementById("cycle-target");
     saveTasksBtn = document.getElementById("save-tasks-btn");
     saveBreakBtn = document.getElementById("save-break-btn");
+    soundWork = document.getElementById("sound-work");
+    soundShortBreak = document.getElementById("sound-short-break");
+    soundLongBreak = document.getElementById("sound-long-break");
+    saveSoundBtn = document.getElementById("save-sound-btn");
 
     navSettings = document.getElementById("nav-settings");
     navRecords = document.getElementById("nav-records");
@@ -198,6 +207,32 @@ describe("options.js", () => {
     expect(store.isRunning).toBe(true);
     // No alarm was cleared
     expect(chrome.alarms.clear).not.toHaveBeenCalled();
+  });
+
+  test("Save Sound Settings button saves only sound fields", () => {
+    chrome.storage.local.setMockStore({
+      soundWork: true,
+      soundShortBreak: true,
+      soundLongBreak: true,
+      timeLeft: 900
+    });
+
+    require("../src/options.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    soundWork.checked = false;
+    soundShortBreak.checked = true;
+    soundLongBreak.checked = false;
+
+    saveSoundBtn.click();
+
+    expect(global.alert).toHaveBeenCalledWith("Sound settings saved successfully!");
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.soundWork).toBe(false);
+    expect(store.soundShortBreak).toBe(true);
+    expect(store.soundLongBreak).toBe(false);
+    expect(store.timeLeft).toBe(900);
   });
 
   test("switches tabs and loads/renders completed focus session history", () => {

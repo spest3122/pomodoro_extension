@@ -3,7 +3,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageEl = document.getElementById("message");
     const container = document.getElementById("action-buttons-container");
 
-    chrome.storage.local.get(["currentMode", "tasks", "shortBreak", "longBreak"], (data) => {
+    chrome.storage.local.get(["currentMode", "lastCompletedMode", "tasks", "shortBreak", "longBreak", "soundWork", "soundShortBreak", "soundLongBreak"], (data) => {
+        const lastMode = data.lastCompletedMode;
+        let shouldPlaySound = true;
+
+        if (lastMode === "work" && data.soundWork === false) shouldPlaySound = false;
+        if (lastMode === "short-break" && data.soundShortBreak === false) shouldPlaySound = false;
+        if (lastMode === "long-break" && data.soundLongBreak === false) shouldPlaySound = false;
+
+        if (shouldPlaySound) {
+            playSound();
+        }
+
         const mode = data.currentMode;
         const tasksList = data.tasks || [{ name: "Work 1", duration: 25 }];
 
@@ -69,5 +80,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (currentTab) chrome.tabs.remove(currentTab.id);
             });
         });
+    }
+
+    // Function to play a notification sound using the Web Audio API
+    function playSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            function playTone(freq, startTime, duration) {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(freq, startTime);
+                
+                gainNode.gain.setValueAtTime(0.1, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            }
+            
+            const now = audioCtx.currentTime;
+            playTone(880, now, 0.5);       // A5
+            playTone(1046.50, now + 0.3, 0.5); // C6
+        } catch (e) {
+            console.error("Audio play failed:", e);
+        }
     }
 });

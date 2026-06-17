@@ -92,6 +92,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             chrome.storage.local.set(
               {
                 currentMode: nextMode,
+                lastCompletedMode: data.currentMode,
                 completedWorkSessions: nextCount,
                 lastSessionDate: today,
                 isRunning: false,
@@ -127,6 +128,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             chrome.storage.local.set(
               {
                 currentMode: "work",
+                lastCompletedMode: data.currentMode,
                 isRunning: false,
                 timeLeft: nextTimeLeft,
               },
