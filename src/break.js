@@ -3,7 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageEl = document.getElementById("message");
     const container = document.getElementById("action-buttons-container");
 
-    chrome.storage.local.get(["currentMode", "lastCompletedMode", "tasks", "shortBreak", "longBreak", "soundWork", "soundShortBreak", "soundLongBreak"], (data) => {
+    const tomatoesLeftEl = document.getElementById("tomatoes-left");
+
+    chrome.storage.local.get(["currentMode", "lastCompletedMode", "tasks", "shortBreak", "longBreak", "soundWork", "soundShortBreak", "soundLongBreak", "cycleTarget", "completedWorkSessions"], (data) => {
         const lastMode = data.lastCompletedMode;
         let shouldPlaySound = true;
 
@@ -26,6 +28,16 @@ document.addEventListener("DOMContentLoaded", () => {
             greetingEl.textContent = isLong ? "🏆 Outstanding Mega Focus!" : "💪 Focus Session Finished!";
             const breakMins = isLong ? data.longBreak : data.shortBreak;
             messageEl.textContent = `Time to step away and reset for ${breakMins} minutes.`;
+
+            if (!isLong) {
+                const target = data.cycleTarget || 4;
+                const completed = data.completedWorkSessions || 0;
+                const tomatoesLeft = target - (completed % target);
+                if (tomatoesLeft > 0 && tomatoesLeft < target) {
+                    tomatoesLeftEl.textContent = `🍅 ${tomatoesLeft} tomato${tomatoesLeft > 1 ? 'es' : ''} left until long break`;
+                    tomatoesLeftEl.style.display = "block";
+                }
+            }
 
             // Create a single button to kick off the break countdown
             const breakBtn = document.createElement("button");

@@ -7,6 +7,7 @@ describe("break.js", () => {
     document.body.innerHTML = `
       <h1 id="greeting">Session Complete!</h1>
       <p id="message">What would you like to do next?</p>
+      <p id="tomatoes-left" style="display: none;"></p>
       <div id="action-buttons-container"></div>
     `;
 
@@ -170,5 +171,41 @@ describe("break.js", () => {
     document.dispatchEvent(new Event("DOMContentLoaded"));
 
     expect(window.AudioContext).not.toHaveBeenCalled();
+  });
+
+  test("shows tomatoes left until long break during short break", () => {
+    chrome.storage.local.setMockStore({
+      currentMode: "short-break",
+      shortBreak: 5,
+      longBreak: 15,
+      cycleTarget: 4,
+      completedWorkSessions: 1,
+      tasks: [{ name: "Reading", duration: 25 }]
+    });
+
+    require("../src/break.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    const tomatoesLeftEl = document.getElementById("tomatoes-left");
+    expect(tomatoesLeftEl.style.display).toBe("block");
+    expect(tomatoesLeftEl.textContent).toBe("🍅 3 tomatoes left until long break");
+  });
+
+  test("shows singular tomato left until long break", () => {
+    chrome.storage.local.setMockStore({
+      currentMode: "short-break",
+      shortBreak: 5,
+      longBreak: 15,
+      cycleTarget: 4,
+      completedWorkSessions: 3,
+      tasks: [{ name: "Reading", duration: 25 }]
+    });
+
+    require("../src/break.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    const tomatoesLeftEl = document.getElementById("tomatoes-left");
+    expect(tomatoesLeftEl.style.display).toBe("block");
+    expect(tomatoesLeftEl.textContent).toBe("🍅 1 tomato left until long break");
   });
 });
