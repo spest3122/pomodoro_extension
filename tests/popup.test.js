@@ -158,7 +158,10 @@ describe("popup.js", () => {
     expect(store.timeLeft).toBe(50 * 60);
     expect(store.currentMode).toBe("work");
     expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", {
-      periodInMinutes: 1 / 60,
+      when: expect.any(Number),
+    });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroBadge", {
+      periodInMinutes: 1,
     });
   });
 
@@ -205,7 +208,10 @@ describe("popup.js", () => {
     expect(store.timeLeft).toBe(1800);
     expect(display.textContent).toBe("30:00");
     expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", {
-      periodInMinutes: 1 / 60,
+      when: expect.any(Number),
+    });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroBadge", {
+      periodInMinutes: 1,
     });
   });
 
@@ -315,7 +321,10 @@ describe("popup.js", () => {
     expect(display.textContent).toBe("05:00");
     expect(currentTaskTitle.textContent).toBe("☕ Short Break");
     expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", {
-      periodInMinutes: 1 / 60,
+      when: expect.any(Number),
+    });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroBadge", {
+      periodInMinutes: 1,
     });
   });
 

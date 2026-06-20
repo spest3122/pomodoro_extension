@@ -33,6 +33,8 @@ describe("background.js", () => {
   test("onAlarm decrements timeLeft when timeLeft > 1", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 120,
+      endTime: Date.now() + 119 * 1000,
+      isRunning: true,
       currentMode: "work",
       completedWorkSessions: 0,
       cycleTarget: 4,
@@ -50,6 +52,8 @@ describe("background.js", () => {
   test("onAlarm transition to short break when work session completes", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 1,
+      endTime: Date.now(),
+      isRunning: true,
       currentMode: "work",
       completedWorkSessions: 0,
       cycleTarget: 4,
@@ -87,6 +91,8 @@ describe("background.js", () => {
     const today = new Date().toLocaleDateString("en-CA");
     chrome.storage.local.setMockStore({
       timeLeft: 1,
+      endTime: Date.now(),
+      isRunning: true,
       currentMode: "work",
       completedWorkSessions: 3, // completedWorkSessions will increment to 4
       lastSessionDate: today,   // same day so no reset
@@ -107,6 +113,8 @@ describe("background.js", () => {
   test("onAlarm transition to work mode when break session completes", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 1,
+      endTime: Date.now(),
+      isRunning: true,
       currentMode: "short-break",
       completedWorkSessions: 1,
       cycleTarget: 4,
@@ -126,6 +134,8 @@ describe("background.js", () => {
   test("onAlarm transition to work mode with custom task duration when break completes", () => {
     chrome.storage.local.setMockStore({
       timeLeft: 1,
+      endTime: Date.now(),
+      isRunning: true,
       currentMode: "short-break",
       completedWorkSessions: 1,
       cycleTarget: 4,
@@ -174,6 +184,8 @@ describe("background.js", () => {
     test("same day: continues counting from stored completedWorkSessions", () => {
       chrome.storage.local.setMockStore({
         timeLeft: 1,
+        endTime: Date.now(),
+        isRunning: true,
         currentMode: "work",
         completedWorkSessions: 2,
         lastSessionDate: TODAY, // same day
@@ -194,6 +206,8 @@ describe("background.js", () => {
     test("new day: resets completedWorkSessions to 1 (0 + first session)", () => {
       chrome.storage.local.setMockStore({
         timeLeft: 1,
+        endTime: Date.now(),
+        isRunning: true,
         currentMode: "work",
         completedWorkSessions: 5,       // yesterday's count
         lastSessionDate: "2026-06-11",  // yesterday
@@ -218,6 +232,8 @@ describe("background.js", () => {
       // would fire long-break at count=4, but with reset count=1 → short-break.
       chrome.storage.local.setMockStore({
         timeLeft: 1,
+        endTime: Date.now(),
+        isRunning: true,
         currentMode: "work",
         completedWorkSessions: 3,       // if NOT reset → would reach cycleTarget
         lastSessionDate: "2026-06-11",  // yesterday
@@ -237,6 +253,8 @@ describe("background.js", () => {
     test("new day: lastSessionDate is absent (first ever install) — treats as new day", () => {
       chrome.storage.local.setMockStore({
         timeLeft: 1,
+        endTime: Date.now(),
+        isRunning: true,
         currentMode: "work",
         completedWorkSessions: 0,
         // lastSessionDate intentionally missing — simulates fresh install
@@ -255,6 +273,8 @@ describe("background.js", () => {
     test("break completion does not update lastSessionDate", () => {
       chrome.storage.local.setMockStore({
         timeLeft: 1,
+        endTime: Date.now(),
+        isRunning: true,
         currentMode: "short-break",
         completedWorkSessions: 2,
         lastSessionDate: "2026-06-11",  // yesterday — should remain unchanged

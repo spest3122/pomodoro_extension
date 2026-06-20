@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PomoTask: Advanced Pomodoro & Tracker",
-  "version": "1.0",
+  "version": "1.01",
   "description": "A customizable Pomodoro timer with task tracking, smart break alerts, and detailed productivity logs to help you stay focused.",
   "permissions": ["storage", "alarms", "notifications"],
   "background": {

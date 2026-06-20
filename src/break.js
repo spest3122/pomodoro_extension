@@ -78,8 +78,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Reusable function to engage the background timer and terminate the tab
     function startSessionSequence(seconds, mode) {
-        chrome.storage.local.set({ timeLeft: seconds, isRunning: true, currentMode: mode }, () => {
-            chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+        const endTime = Date.now() + seconds * 1000;
+        chrome.storage.local.set({ timeLeft: seconds, endTime: endTime, isRunning: true, currentMode: mode }, () => {
+            chrome.alarms.create("pomodoroTimer", { when: endTime });
+            chrome.alarms.create("pomodoroBadge", { periodInMinutes: 1 });
 
             // Update badge aesthetics instantly
             const minutesLeft = Math.ceil(seconds / 60);

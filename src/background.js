@@ -34,10 +34,11 @@ function updateBadge(timeLeft, mode) {
 }
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "pomodoroTimer") {
+  if (alarm.name === "pomodoroTimer" || alarm.name === "pomodoroBadge") {
     chrome.storage.local.get(
       [
         "timeLeft",
+        "endTime",
         "currentMode",
         "completedWorkSessions",
         "lastSessionDate",
@@ -46,12 +47,21 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         "currentTaskIndex",
         "shortBreak",
         "longBreak",
+        "isRunning"
       ],
       (data) => {
-        let time = data.timeLeft - 1;
+        if (!data.isRunning) return;
+
+        let time = data.timeLeft;
+        if (data.endTime) {
+          time = Math.max(0, Math.round((data.endTime - Date.now()) / 1000));
+        } else {
+          time -= 1;
+        }
 
         if (time <= 0) {
           chrome.alarms.clear("pomodoroTimer");
+          chrome.alarms.clear("pomodoroBadge");
 
           if (data.currentMode === "work") {
             // Reset completedWorkSessions if the day has changed

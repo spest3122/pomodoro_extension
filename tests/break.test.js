@@ -46,7 +46,8 @@ describe("break.js", () => {
     expect(store.isRunning).toBe(true);
     expect(store.currentMode).toBe("short-break");
 
-    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", { periodInMinutes: 1 / 60 });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", { when: expect.any(Number) });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroBadge", { periodInMinutes: 1 });
     expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: "5m" });
     expect(chrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#2ecc71" });
     expect(chrome.tabs.getCurrent).toHaveBeenCalled();
@@ -78,7 +79,8 @@ describe("break.js", () => {
     expect(store.isRunning).toBe(true);
     expect(store.currentMode).toBe("long-break");
 
-    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", { periodInMinutes: 1 / 60 });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", { when: expect.any(Number) });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroBadge", { periodInMinutes: 1 });
     expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: "15m" });
     expect(chrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#3498db" });
     expect(chrome.tabs.getCurrent).toHaveBeenCalled();
@@ -115,7 +117,8 @@ describe("break.js", () => {
     expect(store.isRunning).toBe(true);
     expect(store.currentMode).toBe("work");
 
-    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", { periodInMinutes: 1 / 60 });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroTimer", { when: expect.any(Number) });
+    expect(chrome.alarms.create).toHaveBeenCalledWith("pomodoroBadge", { periodInMinutes: 1 });
     expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: "45m" });
     expect(chrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#e74c3c" });
     expect(chrome.tabs.getCurrent).toHaveBeenCalled();

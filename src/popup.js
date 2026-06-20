@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── Boot: read state from storage ────────────────────────────────────────
   chrome.storage.local.get(
-    ["timeLeft", "isRunning", "tasks", "currentMode", "currentTaskIndex",
+    ["timeLeft", "endTime", "isRunning", "tasks", "currentMode", "currentTaskIndex",
      "shortBreak", "longBreak"],
     (data) => {
       localTasks = data.tasks || [{ name: "Work 1", duration: 25 }];
@@ -21,9 +21,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const isRunning = !!data.isRunning;
       const mode = data.currentMode || "work";
 
+      // Calculate accurate display time using endTime if the timer is running
+      let displayTime = data.timeLeft;
+      if (isRunning && data.endTime) {
+        displayTime = Math.max(0, Math.round((data.endTime - Date.now()) / 1000));
+      }
+
       updateStatusTitle(mode, localTasks, currentIndex);
-      updateUI(data.timeLeft);
+      updateUI(displayTime);
       renderAllButtons({ mode, isRunning, activeTaskIndex: currentIndex });
+
+      // Reveal the timer only after real data is loaded — prevents flash of "25:00"
+      display.style.visibility = "visible";
+      currentTaskTitle.style.visibility = "visible";
 
       if (isRunning) startUIInterval();
     },
@@ -44,6 +54,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const mins = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
     const secs = (totalSeconds % 60).toString().padStart(2, "0");
     display.textContent = `${mins}:${secs}`;
+  }
+
+  // ── Badge helper (mirrors background.js updateBadge) ─────────────────────
+  function updateBadgeNow(seconds, mode) {
+    const minutesLeft = Math.ceil(seconds / 60);
+    chrome.action.setBadgeText({ text: minutesLeft > 0 ? `${minutesLeft}m` : "DONE" });
+    if (mode === "work")
+      chrome.action.setBadgeBackgroundColor({ color: "#e74c3c" });
+    else if (mode === "short-break")
+      chrome.action.setBadgeBackgroundColor({ color: "#2ecc71" });
+    else if (mode === "long-break")
+      chrome.action.setBadgeBackgroundColor({ color: "#3498db" });
   }
 
   // ── Unified button state renderer ─────────────────────────────────────────
@@ -92,16 +114,21 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isActiveTask && isRunning) return;
 
         chrome.alarms.clear("pomodoroTimer");
+        chrome.alarms.clear("pomodoroBadge");
         clearInterval(updateInterval);
 
         if (isActiveTask && !isRunning) {
           // ── RESUME: same task was paused ──────────────────────────────────
           chrome.storage.local.get(["timeLeft"], (data) => {
+            const seconds = data.timeLeft;
+            const endTime = Date.now() + seconds * 1000;
             chrome.storage.local.set(
-              { isRunning: true, currentMode: "work" },
+              { isRunning: true, currentMode: "work", endTime: endTime },
               () => {
-                chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
-                updateUI(data.timeLeft);
+                chrome.alarms.create("pomodoroTimer", { when: endTime });
+                chrome.alarms.create("pomodoroBadge", { periodInMinutes: 1 });
+                updateBadgeNow(seconds, "work");
+                updateUI(seconds);
                 updateStatusTitle("work", tasks, index);
                 renderAllButtons({ mode: "work", isRunning: true, activeTaskIndex: index });
                 startUIInterval();
@@ -111,15 +138,19 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           // ── START FRESH: different task ───────────────────────────────────
           const seconds = task.duration * 60;
+          const endTime = Date.now() + seconds * 1000;
           chrome.storage.local.set(
             {
               isRunning: true,
               currentMode: "work",
               currentTaskIndex: index,
               timeLeft: seconds,
+              endTime: endTime,
             },
             () => {
-              chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+              chrome.alarms.create("pomodoroTimer", { when: endTime });
+              chrome.alarms.create("pomodoroBadge", { periodInMinutes: 1 });
+              updateBadgeNow(seconds, "work");
               updateUI(seconds);
               updateStatusTitle("work", tasks, index);
               renderAllButtons({ mode: "work", isRunning: true, activeTaskIndex: index });
@@ -156,6 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function startBreak(breakMode) {
     chrome.alarms.clear("pomodoroTimer");
+    chrome.alarms.clear("pomodoroBadge");
     clearInterval(updateInterval);
 
     chrome.storage.local.get(
@@ -166,11 +198,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isPaused) {
           // ── RESUME: same break was paused — continue from stored timeLeft ──
+          const seconds = data.timeLeft;
+          const endTime = Date.now() + seconds * 1000;
           chrome.storage.local.set(
-            { isRunning: true },
+            { isRunning: true, endTime: endTime },
             () => {
-              chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
-              updateUI(data.timeLeft);
+              chrome.alarms.create("pomodoroTimer", { when: endTime });
+              chrome.alarms.create("pomodoroBadge", { periodInMinutes: 1 });
+              updateBadgeNow(seconds, breakMode);
+              updateUI(seconds);
               updateStatusTitle(breakMode, localTasks, activeTaskIndex);
               renderAllButtons({ mode: breakMode, isRunning: true, activeTaskIndex });
               startUIInterval();
@@ -182,11 +218,14 @@ document.addEventListener("DOMContentLoaded", () => {
             ? (data.shortBreak || 5)
             : (data.longBreak || 15);
           const seconds = duration * 60;
+          const endTime = Date.now() + seconds * 1000;
 
           chrome.storage.local.set(
-            { isRunning: true, currentMode: breakMode, timeLeft: seconds },
+            { isRunning: true, currentMode: breakMode, timeLeft: seconds, endTime: endTime },
             () => {
-              chrome.alarms.create("pomodoroTimer", { periodInMinutes: 1 / 60 });
+              chrome.alarms.create("pomodoroTimer", { when: endTime });
+              chrome.alarms.create("pomodoroBadge", { periodInMinutes: 1 });
+              updateBadgeNow(seconds, breakMode);
               updateUI(seconds);
               updateStatusTitle(breakMode, localTasks, activeTaskIndex);
               renderAllButtons({ mode: breakMode, isRunning: true, activeTaskIndex });
@@ -206,14 +245,19 @@ document.addEventListener("DOMContentLoaded", () => {
     clearInterval(updateInterval);
     updateInterval = setInterval(() => {
       chrome.storage.local.get(
-        ["timeLeft", "isRunning", "currentMode", "tasks", "currentTaskIndex"],
+        ["timeLeft", "endTime", "isRunning", "currentMode", "tasks", "currentTaskIndex"],
         (data) => {
           const mode = data.currentMode || "work";
           const isRunning = !!data.isRunning;
           localTasks = data.tasks || localTasks;
           const activeTaskIndex = data.currentTaskIndex || 0;
 
-          updateUI(data.timeLeft);
+          let displayTime = data.timeLeft;
+          if (isRunning && data.endTime) {
+            displayTime = Math.max(0, Math.round((data.endTime - Date.now()) / 1000));
+          }
+
+          updateUI(displayTime);
           updateStatusTitle(mode, localTasks, activeTaskIndex);
 
           if (!isRunning) {
@@ -228,11 +272,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Pause ─────────────────────────────────────────────────────────────────
   pauseBtn.addEventListener("click", () => {
     chrome.alarms.clear("pomodoroTimer");
-    chrome.storage.local.set({ isRunning: false });
+    chrome.alarms.clear("pomodoroBadge");
     clearInterval(updateInterval);
-    chrome.storage.local.get(["tasks", "currentTaskIndex", "currentMode"], (data) => {
+    chrome.storage.local.get(["tasks", "currentTaskIndex", "currentMode", "endTime", "timeLeft", "isRunning"], (data) => {
+      if (!data.isRunning) return;
       const mode = data.currentMode || "work";
       localTasks = data.tasks || localTasks;
+      
+      let currentTimeLeft = data.timeLeft;
+      if (data.endTime) {
+        currentTimeLeft = Math.max(0, Math.round((data.endTime - Date.now()) / 1000));
+      }
+
+      chrome.storage.local.set({ isRunning: false, timeLeft: currentTimeLeft });
+      updateUI(currentTimeLeft);
+
       renderAllButtons({
         mode,
         isRunning: false,
@@ -244,6 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ── Reset ─────────────────────────────────────────────────────────────────
   resetBtn.addEventListener("click", () => {
     chrome.alarms.clear("pomodoroTimer");
+    chrome.alarms.clear("pomodoroBadge");
     clearInterval(updateInterval);
     chrome.storage.local.get(
       ["tasks", "currentTaskIndex", "currentMode", "shortBreak", "longBreak"],
