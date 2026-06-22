@@ -58,8 +58,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── Badge helper (mirrors background.js updateBadge) ─────────────────────
   function updateBadgeNow(seconds, mode) {
-    const minutesLeft = Math.ceil(seconds / 60);
-    chrome.action.setBadgeText({ text: minutesLeft > 0 ? `${minutesLeft}m` : "DONE" });
+    // Use Math.floor to match the mm:ss display's minute component
+    const minutesLeft = Math.floor(seconds / 60);
+    const badgeText = minutesLeft > 0 ? `${minutesLeft}m` : (seconds > 0 ? "<1m" : "DONE");
+    chrome.action.setBadgeText({ text: badgeText });
     if (mode === "work")
       chrome.action.setBadgeBackgroundColor({ color: "#e74c3c" });
     else if (mode === "short-break")
@@ -259,6 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
           updateUI(displayTime);
           updateStatusTitle(mode, localTasks, activeTaskIndex);
+          // Keep badge in sync with popup display every second
+          if (isRunning) updateBadgeNow(displayTime, mode);
 
           if (!isRunning) {
             clearInterval(updateInterval);
