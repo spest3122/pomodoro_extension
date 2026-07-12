@@ -2,147 +2,255 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Spicy+Rice&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      body {
-        width: 250px;
-        font-family: Arial, sans-serif;
-        padding: 15px;
+      :root {
+        --ink-deep: #111111;
+        --canvas-aged: #e6dfcc;
+        --accent-grey: #cccccc;
+        --accent-white: #ffffff;
+        --border-ink: 5px solid #111111;
+        --shadow-hard-card: 12px 12px 0px #111111;
+        --shadow-hard-btn: 0px 8px 0px #111111;
+        --shadow-hard-sm: 4px 4px 0px #111111;
+        --font-display: "Spicy Rice", cursive;
+        --font-body: "Fredoka One", cursive;
+      }
+
+      html {
+        overflow: hidden;
         margin: 0;
+        padding: 0;
+      }
+
+      body {
+        width: 320px;
+        background-color: var(--canvas-aged);
+        margin: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .card-main {
+        background-color: var(--accent-white);
+        border: var(--border-ink);
+        padding: 16px 14px;
+        box-shadow: var(--shadow-hard-card);
+        transform: rotate(-1deg);
+        box-sizing: border-box;
+      }
+
+      h3 {
+        font-family: var(--font-display);
+        font-size: 26px;
+        color: var(--ink-deep);
+        margin: 0 0 6px 0;
+        text-transform: uppercase;
         text-align: center;
+        letter-spacing: 1px;
       }
-      .timer-display {
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin: 5px 0;
-      }
+
       #current-task-title {
-        font-size: 1.1rem;
-        color: #555;
-        font-weight: bold;
-        margin-bottom: 10px;
+        font-family: var(--font-body);
+        font-size: 13px;
+        color: var(--ink-deep);
+        margin: 0 0 6px 0;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .timer-display {
+        font-family: var(--font-display);
+        font-size: 52px;
+        color: var(--ink-deep);
+        margin: 0 0 10px 0;
+        text-align: center;
+        line-height: 1.1;
+        letter-spacing: 2px;
       }
 
       /* ── Task buttons ── */
       #task-btn-row {
         display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        justify-content: center;
-        margin-bottom: 8px;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
       }
       .task-btn {
-        flex: 1 1 auto;
-        padding: 7px 10px;
-        font-size: 0.82rem;
+        display: block;
+        width: 100%;
+        padding: 8px 10px;
+        font-family: var(--font-body);
+        font-size: 13px;
         font-weight: bold;
         cursor: pointer;
-        border: 2px solid var(--task-color);
-        background: #fff;
-        color: var(--task-color);
-        border-radius: 6px;
-        transition: background 0.15s, color 0.15s, opacity 0.15s;
+        border: var(--border-ink) !important;
+        background-color: var(--accent-white) !important;
+        color: var(--ink-deep) !important;
+        box-shadow: var(--shadow-hard-sm) !important;
+        border-radius: 12px;
+        text-align: center;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s,
+          color 0.1s;
+        box-sizing: border-box;
+        text-transform: uppercase;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .task-btn:hover:not(:disabled) {
+        background-color: var(--accent-grey) !important;
+      }
       .task-btn.active {
-        background: var(--task-color);
-        color: #fff;
+        background-color: var(--ink-deep) !important;
+        color: var(--accent-white) !important;
+        box-shadow: none !important;
+        transform: translate(4px, 4px) !important;
+      }
+      .task-btn:active:not(:disabled) {
+        transform: translate(4px, 4px) !important;
+        box-shadow: none !important;
       }
       .task-btn:disabled {
-        opacity: 0.3;
+        opacity: 0.4 !important;
         cursor: not-allowed;
+        transform: none !important;
+        box-shadow: var(--shadow-hard-sm) !important;
       }
-      /* Per-task color palette */
-      .task-btn-0 { --task-color: #e74c3c; } /* tomato red */
-      .task-btn-1 { --task-color: #6366f1; } /* indigo     */
-      .task-btn-2 { --task-color: #f59e0b; } /* amber      */
 
       /* ── Break buttons ── */
       #break-btn-row {
         display: flex;
-        gap: 6px;
+        gap: 8px;
         justify-content: center;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
       }
       .break-btn {
         flex: 1;
-        padding: 6px 8px;
-        font-size: 0.8rem;
+        padding: 8px;
+        font-family: var(--font-body);
+        font-size: 12px;
         font-weight: bold;
         cursor: pointer;
-        border: 2px solid var(--break-color);
-        background: #fff;
-        color: var(--break-color);
-        border-radius: 6px;
-        transition: background 0.15s, color 0.15s, opacity 0.15s;
+        border: var(--border-ink) !important;
+        background-color: var(--accent-white) !important;
+        color: var(--ink-deep) !important;
+        box-shadow: var(--shadow-hard-sm) !important;
+        border-radius: 12px;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s,
+          color 0.1s;
+        text-transform: uppercase;
+      }
+      .break-btn:hover:not(:disabled) {
+        background-color: var(--accent-grey) !important;
       }
       .break-btn.active {
-        background: var(--break-color);
-        color: #fff;
+        background-color: var(--ink-deep) !important;
+        color: var(--accent-white) !important;
+        box-shadow: none !important;
+        transform: translate(4px, 4px) !important;
+      }
+      .break-btn:active:not(:disabled) {
+        transform: translate(4px, 4px) !important;
+        box-shadow: none !important;
       }
       .break-btn:disabled {
-        opacity: 0.3;
+        opacity: 0.4 !important;
         cursor: not-allowed;
+        transform: none !important;
+        box-shadow: var(--shadow-hard-sm) !important;
       }
-      #short-break-btn { --break-color: #0ea5e9; } /* sky blue  */
-      #long-break-btn  { --break-color: #10b981; } /* emerald   */
 
       /* ── Pause / Reset row ── */
       .controls-row {
         display: flex;
-        gap: 6px;
+        gap: 8px;
         justify-content: center;
-        margin-top: 4px;
+        margin-top: 12px;
       }
       .btn {
         flex: 1;
-        padding: 7px 0;
+        padding: 6px 12px;
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: bold;
         cursor: pointer;
-        font-size: 0.85rem;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        background: #f5f5f5;
+        border: var(--border-ink);
+        background-color: var(--accent-grey);
+        color: var(--ink-deep);
+        box-shadow: var(--shadow-hard-sm);
+        border-radius: 50px;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s;
+        text-transform: uppercase;
       }
       .btn:hover {
-        background: #e8e8e8;
+        background-color: var(--accent-white);
+      }
+      .btn:active {
+        transform: translate(3px, 3px);
+        box-shadow: 1px 1px 0px #111111;
       }
 
       .footer-links {
-        margin-top: 15px;
-        padding-top: 10px;
-        border-top: 1px solid #ccc;
+        margin-top: 14px;
+        padding-top: 8px;
+        border-top: var(--border-ink);
+        text-align: center;
       }
       .settings-link {
-        font-size: 0.85rem;
-        color: #007bff;
+        font-family: var(--font-body);
+        font-size: 13px;
+        color: var(--ink-deep);
         text-decoration: none;
+        border-bottom: 2px dashed var(--ink-deep);
         cursor: pointer;
+        display: inline-block;
+        text-transform: uppercase;
       }
     </style>
   </head>
   <body>
-    <h3>Pomodoro Timer</h3>
-    <div id="current-task-title" style="visibility:hidden">Loading...</div>
-    <div class="timer-display" id="time-left" style="visibility:hidden"></div>
+    <div class="card-main">
+      <h3>Pomodoro Timer</h3>
+      <div id="current-task-title" style="visibility: hidden">Loading...</div>
+      <div
+        class="timer-display"
+        id="time-left"
+        style="visibility: hidden"
+      ></div>
 
-    <!-- One button per custom task -->
-    <div id="task-btn-row"></div>
+      <!-- One button per custom task -->
+      <div id="task-btn-row"></div>
 
-    <!-- Short Break / Long Break -->
-    <div id="break-btn-row">
-      <button class="break-btn" id="short-break-btn">☕ Short Break</button>
-      <button class="break-btn" id="long-break-btn">🛋️ Long Break</button>
-    </div>
+      <!-- Short Break / Long Break -->
+      <div id="break-btn-row">
+        <button class="break-btn" id="short-break-btn">☕ Short Break</button>
+        <button class="break-btn" id="long-break-btn">🛋️ Long Break</button>
+      </div>
 
-    <!-- Pause + Reset -->
-    <div class="controls-row">
-      <button class="btn" id="pause-btn">⏸ Pause</button>
-      <button class="btn" id="reset-btn">↺ Reset</button>
-    </div>
+      <!-- Pause + Reset -->
+      <div class="controls-row">
+        <button class="btn" id="pause-btn">⏸ Pause</button>
+        <button class="btn" id="reset-btn">↺ Reset</button>
+      </div>
 
-    <div class="footer-links">
-      <span class="settings-link" id="open-settings">⚙️ Open Settings Board</span>
+      <div class="footer-links">
+        <span class="settings-link" id="open-settings">⚙️ Settings Board</span>
+      </div>
     </div>
 
     <script src="popup.js"></script>

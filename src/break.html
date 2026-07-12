@@ -1,65 +1,124 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
-    <meta charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Spicy+Rice&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f6f9;
-            color: #333;
-        }
+      :root {
+        --ink-deep: #111111;
+        --canvas-aged: #e6dfcc;
+        --accent-grey: #cccccc;
+        --accent-white: #ffffff;
+        --border-ink: 5px solid #111111;
+        --shadow-hard-card: 12px 12px 0px #111111;
+        --shadow-hard-btn: 0px 8px 0px #111111;
+        --font-display: "Spicy Rice", cursive;
+        --font-body: "Fredoka One", cursive;
+      }
 
-        h1 {
-            font-size: 3.5rem;
-            margin-bottom: 10px;
-        }
+      body {
+        background-color: var(--canvas-aged);
+        font-family: var(--font-body);
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
 
-        p {
-            font-size: 1.5rem;
-            color: #666;
-            margin-bottom: 30px;
-        }
+      /* Centered card for break page decisions */
+      .card-main {
+        background-color: var(--accent-white);
+        border: var(--border-ink);
+        border-radius: 30px 15px 30px 15px;
+        padding: 45px 30px;
+        max-width: 500px;
+        width: 100%;
+        box-shadow: var(--shadow-hard-card);
+        box-sizing: border-box;
+        text-align: center;
+      }
 
-        /* Container for dynamic task selection buttons */
-        .buttons-flex {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
+      h1 {
+        font-family: var(--font-display);
+        font-size: 44px;
+        color: var(--ink-deep);
+        margin-top: 0;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
 
-        .btn {
-            padding: 15px 32px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: transform 0.1s, background 0.2s;
-        }
+      p {
+        font-size: 18px;
+        color: var(--ink-deep);
+        margin-bottom: 30px;
+      }
 
-        .btn:hover {
-            transform: scale(1.03);
-        }
+      #tomatoes-left {
+        font-family: var(--font-body);
+        font-size: 16px;
+        color: var(--ink-deep) !important;
+        font-weight: bold;
+        margin-top: -15px;
+        margin-bottom: 25px;
+        text-transform: uppercase;
+      }
+
+      /* Container for dynamic task selection buttons */
+      .buttons-flex {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        flex: 1 1 auto;
+        padding: 12px 24px;
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--ink-deep) !important;
+        background-color: var(--accent-white) !important;
+        border: var(--border-ink) !important;
+        border-radius: 12px;
+        box-shadow: var(--shadow-hard-btn) !important;
+        cursor: pointer;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s;
+        text-transform: uppercase;
+      }
+
+      .btn:hover {
+        background-color: var(--accent-grey) !important;
+      }
+
+      .btn:active {
+        transform: translateY(6px) !important;
+        box-shadow: 0px 2px 0px var(--ink-deep) !important;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-    <h1 id="greeting">Session Complete!</h1>
-    <p id="message">What would you like to do next?</p>
-    <p id="tomatoes-left" style="margin-top: -15px; margin-bottom: 25px; font-size: 1.2rem; color: #e74c3c; font-weight: bold; display: none;"></p>
+  <body>
+    <div class="card-main">
+      <h1 id="greeting">Session Complete!</h1>
+      <p id="message">What would you like to do next?</p>
+      <p id="tomatoes-left" style="display: none"></p>
 
-    <div class="buttons-flex" id="action-buttons-container"></div>
+      <div class="buttons-flex" id="action-buttons-container"></div>
+    </div>
 
     <script src="break.js"></script>
-</body>
-
+  </body>
 </html>

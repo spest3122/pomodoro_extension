@@ -3,36 +3,112 @@
   <head>
     <meta charset="utf-8" />
     <title>Timer Settings & Analytics Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Spicy+Rice&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 550px;
-        margin: 40px auto;
-        padding: 20px;
-        background-color: #f8f9fa;
-        border: 1px solid #e1e4e8;
-        border-radius: 8px;
+      :root {
+        --ink-deep: #111111;
+        --canvas-aged: #e6dfcc;
+        --accent-grey: #cccccc;
+        --accent-white: #ffffff;
+        --border-ink: 5px solid #111111;
+        --shadow-hard-card: 12px 12px 0px #111111;
+        --shadow-hard-btn: 0px 8px 0px #111111;
+        --shadow-hard-sm: 4px 4px 0px #111111;
+        --font-display: "Spicy Rice", cursive;
+        --font-body: "Fredoka One", cursive;
       }
+
+      body {
+        background-color: var(--canvas-aged);
+        font-family: var(--font-body);
+        margin: 0;
+        padding: 40px 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
+
+      /* Main container styled as an animated cartoon card */
+      .card-main {
+        background-color: var(--accent-white);
+        border: var(--border-ink);
+        border-radius: 30px 15px 30px 15px;
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+        box-shadow: var(--shadow-hard-card);
+        box-sizing: border-box;
+      }
+
+      h2 {
+        font-family: var(--font-display);
+        font-size: 40px;
+        color: var(--ink-deep);
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 25px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: var(--border-ink);
+        padding-bottom: 12px;
+      }
+
+      h4 {
+        font-family: var(--font-body);
+        font-size: 20px;
+        color: var(--ink-deep);
+        margin-top: 0;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+      }
+
       /* Tab Navigation Layout */
       .tabs-nav {
         display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-        border-bottom: 2px solid #ddd;
-        padding-bottom: 10px;
+        gap: 12px;
+        margin-bottom: 25px;
+        border-bottom: var(--border-ink);
+        padding-bottom: 15px;
       }
       .tab-btn {
-        padding: 8px 16px;
+        padding: 10px 20px;
         cursor: pointer;
-        border: none;
-        background: #e9ecef;
+        border: var(--border-ink);
+        background-color: var(--accent-white);
+        color: var(--ink-deep);
+        font-family: var(--font-body);
+        font-size: 16px;
         font-weight: bold;
-        border-radius: 4px;
+        border-radius: 12px;
+        box-shadow: var(--shadow-hard-sm);
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s,
+          color 0.1s;
+        text-transform: uppercase;
+      }
+      .tab-btn:hover:not(.active) {
+        background-color: var(--accent-grey);
       }
       .tab-btn.active {
-        background-color: #007bff;
-        color: white;
+        background-color: var(--ink-deep);
+        color: var(--accent-white);
+        box-shadow: none;
+        transform: translate(4px, 4px);
       }
+      .tab-btn:active {
+        transform: translate(4px, 4px);
+        box-shadow: none;
+      }
+
       .tab-content {
         display: none;
       }
@@ -40,199 +116,345 @@
         display: block;
       }
 
-      h2 {
-        border-bottom: 2px solid #007bff;
-        padding-bottom: 8px;
-        margin-top: 0;
-        margin-bottom: 20px;
+      .section {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 3px dashed var(--ink-deep);
       }
-      h4 {
-        margin-bottom: 8px;
-        color: #444;
+      .section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
       }
+
       .task-row {
         display: flex;
-        gap: 10px;
-        margin-bottom: 8px;
+        gap: 12px;
+        margin-bottom: 12px;
         align-items: center;
+      }
+
+      input[type="text"],
+      input[type="number"] {
+        font-family: var(--font-body);
+        font-size: 14px;
+        background-color: var(--accent-white);
+        color: var(--ink-deep);
+        border: var(--border-ink);
+        border-radius: 12px;
+        padding: 8px 12px;
+        box-shadow: var(--shadow-hard-sm);
+        box-sizing: border-box;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s;
       }
       input[type="text"] {
         flex: 2;
-        padding: 6px;
       }
       input[type="number"] {
-        width: 60px;
-        padding: 6px;
+        width: 80px;
       }
+      input[type="text"]:focus,
+      input[type="number"]:focus {
+        outline: none;
+        background-color: var(--accent-white);
+        box-shadow: 2px 2px 0px var(--ink-deep);
+        transform: translate(2px, 2px);
+      }
+
       .btn {
         padding: 8px 16px;
         cursor: pointer;
+        font-family: var(--font-body);
         font-weight: bold;
       }
+
+      #add-task-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: bold;
+        border: var(--border-ink);
+        background-color: var(--accent-grey);
+        color: var(--ink-deep);
+        box-shadow: var(--shadow-hard-sm);
+        border-radius: 50px;
+        text-transform: uppercase;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s;
+      }
+      #add-task-btn:hover {
+        background-color: var(--accent-white);
+      }
+      #add-task-btn:active {
+        transform: translate(3px, 3px);
+        box-shadow: 1px 1px 0px var(--ink-deep);
+      }
+
       .delete-btn {
-        color: red;
-        cursor: pointer;
-        background: none;
-        border: none;
-        font-size: 1.1rem;
-      }
-      .section {
-        margin-bottom: 25px;
-      }
-      label {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 0.95rem;
-      }
-      .section-save-btn {
-        background-color: #28a745;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        font-size: 0.9rem;
-        border-radius: 4px;
-        cursor: pointer;
+        font-family: var(--font-body);
+        font-size: 18px;
         font-weight: bold;
-        margin-top: 10px;
+        color: var(--ink-deep);
+        cursor: pointer;
+        background: var(--accent-white);
+        border: var(--border-ink);
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 2px 2px 0px var(--ink-deep);
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s;
+        padding: 0;
+      }
+      .delete-btn:hover {
+        background-color: var(--accent-grey);
+        transform: rotate(15deg);
+      }
+      .delete-btn:active {
+        transform: translate(1px, 1px) rotate(15deg);
+        box-shadow: 1px 1px 0px var(--ink-deep);
+      }
+
+      label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        font-size: 15px;
+        font-family: var(--font-body);
+        color: var(--ink-deep);
+      }
+
+      /* Custom Cartoon Checkbox style */
+      input[type="checkbox"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border: var(--border-ink);
+        border-radius: 6px;
+        background-color: var(--accent-white);
+        cursor: pointer;
+        position: relative;
+        transition: background-color 0.1s;
+        flex-shrink: 0;
+        margin: 0;
+      }
+      input[type="checkbox"]:checked {
+        background-color: var(--ink-deep);
+      }
+      input[type="checkbox"]:checked::after {
+        content: "✓";
+        color: var(--accent-white);
+        font-family: var(--font-body);
+        font-size: 16px;
+        font-weight: bold;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .section-save-btn {
+        display: block;
+        width: 100%;
+        margin-top: 15px;
+        padding: 12px 24px;
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        border: var(--border-ink);
+        background-color: var(--accent-white);
+        color: var(--ink-deep);
+        box-shadow: var(--shadow-hard-btn);
+        border-radius: 12px;
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s;
+        text-transform: uppercase;
+      }
+      .section-save-btn:hover {
+        background-color: var(--accent-grey);
+      }
+      .section-save-btn:active {
+        transform: translateY(6px);
+        box-shadow: 0px 2px 0px var(--ink-deep);
       }
 
       /* Records styling elements */
       .stat-box {
-        background: #fff;
+        background-color: var(--accent-white);
         padding: 20px;
-        border-radius: 6px;
-        border: 1px solid #ddd;
+        border-radius: 30px 15px 30px 15px;
+        border: var(--border-ink);
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 25px;
+        box-shadow: var(--shadow-hard-sm);
+        transform: rotate(1deg);
       }
       .stat-number {
-        font-size: 3.5rem;
+        font-family: var(--font-display);
+        font-size: 64px;
         font-weight: bold;
-        color: #28a745;
+        color: var(--ink-deep);
+        line-height: 1;
       }
       .history-list {
         max-height: 250px;
         overflow-y: auto;
-        background: #fff;
-        border: 1px solid #ddd;
-        padding: 10px;
-        border-radius: 4px;
+        background-color: var(--accent-white);
+        border: var(--border-ink);
+        padding: 15px;
+        border-radius: 12px;
         list-style: none;
         margin: 0;
+        box-shadow: var(--shadow-hard-sm);
+        box-sizing: border-box;
       }
       .history-item {
-        padding: 8px;
-        border-bottom: 1px solid #eee;
+        padding: 10px;
+        border-bottom: 2px dashed var(--ink-deep);
         display: flex;
         justify-content: space-between;
-        font-size: 0.9rem;
+        align-items: center;
+        font-size: 14px;
+        font-family: var(--font-body);
       }
       .history-item:last-child {
         border-bottom: none;
       }
       .clear-records-btn {
-        background-color: #dc3545;
-        color: white;
-        border: none;
+        background-color: var(--accent-grey);
+        color: var(--ink-deep);
+        border: var(--border-ink);
         padding: 6px 12px;
-        border-radius: 4px;
+        border-radius: 50px;
         cursor: pointer;
-        float: right;
-        font-size: 0.8rem;
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: bold;
+        box-shadow: var(--shadow-hard-sm);
+        transition:
+          transform 0.1s,
+          box-shadow 0.1s,
+          background-color 0.1s;
+        text-transform: uppercase;
+      }
+      .clear-records-btn:hover {
+        background-color: var(--accent-white);
+      }
+      .clear-records-btn:active {
+        transform: translate(3px, 3px);
+        box-shadow: 1px 1px 0px var(--ink-deep);
       }
     </style>
   </head>
   <body>
-    <h2>⏱️ Pomodoro Dashboard</h2>
+    <div class="card-main">
+      <h2>⏱️ Pomodoro Dashboard</h2>
 
-    <div class="tabs-nav">
-      <button class="tab-btn active" id="nav-settings">
-        ⚙️ Configurations
-      </button>
-      <button class="tab-btn" id="nav-records">📊 Records History</button>
-    </div>
+      <div class="tabs-nav">
+        <button class="tab-btn active" id="nav-settings">
+          ⚙️ Configurations
+        </button>
+        <button class="tab-btn" id="nav-records">📊 Records History</button>
+      </div>
 
-    <div id="content-settings" class="tab-content active">
-      <div class="section">
+      <div id="content-settings" class="tab-content active">
+        <div class="section">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 10px;
+            "
+          >
+            <h4>Custom Task Array (Max 3)</h4>
+            <button id="add-task-btn">+ Add Task</button>
+          </div>
+          <div id="tasks-container"></div>
+          <button class="section-save-btn" id="save-tasks-btn">
+            💾 Save Tasks
+          </button>
+        </div>
+
+        <div class="section" style="padding-top: 15px">
+          <h4>Break &amp; Schedule Architecture</h4>
+          <label
+            >Short Break Duration:
+            <input type="number" id="short-time" min="1" /> minutes</label
+          >
+          <label
+            >Long Break Duration:
+            <input type="number" id="long-time" min="1" /> minutes</label
+          >
+          <label
+            >Trigger Long Break After:
+            <input type="number" id="cycle-target" min="1" /> focus
+            blocks</label
+          >
+          <button class="section-save-btn" id="save-break-btn">
+            💾 Save Break Settings
+          </button>
+        </div>
+
+        <div class="section" style="padding-top: 15px">
+          <h4>Sound Settings</h4>
+          <label>
+            <input type="checkbox" id="sound-work" />
+            Play sound when Work Session completes
+          </label>
+          <label style="margin-top: 5px">
+            <input type="checkbox" id="sound-short-break" />
+            Play sound when Short Break completes
+          </label>
+          <label style="margin-top: 5px">
+            <input type="checkbox" id="sound-long-break" />
+            Play sound when Long Break completes
+          </label>
+          <button class="section-save-btn" id="save-sound-btn">
+            💾 Save Sound Settings
+          </button>
+        </div>
+      </div>
+
+      <div id="content-records" class="tab-content">
+        <div class="stat-box">
+          <h4>Completed Focus Blocks Today</h4>
+          <div class="stat-number" id="today-count">0</div>
+        </div>
+
         <div
           style="
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
           "
         >
-          <h4>Custom Task Array (Max 3)</h4>
-          <button
-            class="btn"
-            id="add-task-btn"
-            style="font-size: 0.8rem; padding: 4px 8px"
-          >
-            + Add Task
+          <h4 style="margin: 0">Activity Timeline</h4>
+          <button class="clear-records-btn" id="clear-history-btn">
+            Clear All Logs
           </button>
         </div>
-        <div id="tasks-container"></div>
-        <button class="section-save-btn" id="save-tasks-btn">💾 Save Tasks</button>
+        <ul class="history-list" id="history-log-container">
+          <li style="color: #888; text-align: center; padding: 20px">
+            No recorded blocks logged yet.
+          </li>
+        </ul>
       </div>
-
-      <div
-        class="section"
-        style="border-top: 1px solid #ddd; padding-top: 15px"
-      >
-        <h4>Break &amp; Schedule Architecture</h4>
-        <label
-          >Short Break Duration:
-          <input type="number" id="short-time" min="1" /> minutes</label
-        >
-        <label
-          >Long Break Duration:
-          <input type="number" id="long-time" min="1" /> minutes</label
-        >
-        <label
-          >Trigger Long Break After:
-          <input type="number" id="cycle-target" min="1" /> focus blocks</label
-        >
-        <button class="section-save-btn" id="save-break-btn">💾 Save Break Settings</button>
-      </div>
-
-      <div
-        class="section"
-        style="border-top: 1px solid #ddd; padding-top: 15px"
-      >
-        <h4>Sound Settings</h4>
-        <label style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" id="sound-work" style="margin: 0; width: 18px; height: 18px;" />
-          Play sound when Work Session completes
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-          <input type="checkbox" id="sound-short-break" style="margin: 0; width: 18px; height: 18px;" />
-          Play sound when Short Break completes
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-          <input type="checkbox" id="sound-long-break" style="margin: 0; width: 18px; height: 18px;" />
-          Play sound when Long Break completes
-        </label>
-        <button class="section-save-btn" id="save-sound-btn">💾 Save Sound Settings</button>
-      </div>
-    </div>
-
-    <div id="content-records" class="tab-content">
-      <div class="stat-box">
-        <h4>Completed Focus Blocks Today</h4>
-        <div class="stat-number" id="today-count">0</div>
-      </div>
-
-      <div style="margin-bottom: 10px; height: 20px">
-        <h4 style="display: inline-block; margin: 0">Activity Timeline</h4>
-        <button class="clear-records-btn" id="clear-history-btn">
-          Clear All Logs
-        </button>
-      </div>
-      <ul class="history-list" id="history-log-container">
-        <li style="color: #888; text-align: center; padding: 20px">
-          No recorded blocks logged yet.
-        </li>
-      </ul>
     </div>
 
     <script src="options.js"></script>

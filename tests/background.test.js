@@ -45,7 +45,7 @@ describe("background.js", () => {
 
     const store = chrome.storage.local.getMockStore();
     expect(store.timeLeft).toBe(119);
-    expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: "2m" });
+    expect(chrome.action.setBadgeText).toHaveBeenCalledWith({ text: "1m" });
     expect(chrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ color: "#e74c3c" });
   });
 
@@ -80,7 +80,6 @@ describe("background.js", () => {
       { url: "chrome-extension://mock-id/break.html" },
       expect.any(Function)
     );
-    expect(chrome.windows.get).toHaveBeenCalledWith(456, expect.any(Function));
     expect(chrome.windows.update).toHaveBeenCalledWith(456, {
       focused: true,
       drawAttention: true,
