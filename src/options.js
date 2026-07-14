@@ -73,11 +73,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Parse human legible timestamps
         const logDate = new Date(item.timestamp);
-        const formattedTime = logDate.toLocaleTimeString([], {
+        const formattedTime = logDate.toLocaleTimeString("en-US", {
           hour: "2-digit",
           minute: "2-digit",
         });
-        const formattedDate = logDate.toLocaleDateString([], {
+        const formattedDate = logDate.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
         });

@@ -10,24 +10,29 @@ The project codebase is organized into source files for the extension and a robu
 
 ```text
 pomodoro/
-├── src/                      # Extension Source Code
-│   ├── manifest.json         # Extension manifest (v3) configuring permissions and entry points
-│   ├── background.js         # Service worker managing alarm-based timing logic, state, and tab focus
-│   ├── popup.html            # Main extension interface popup
-│   ├── popup.js              # Logic for managing popup timer display, start/pause/reset states
-│   ├── options.html          # Settings configuration and analytics history dashboard
-│   ├── options.js            # Configuration controls and records retrieval/rendering logic
-│   ├── break.html            # Full-screen break/transition page opened when sessions complete
-│   └── break.js              # Interactivity for handling break/session completion options
-├── tests/                    # Testing Suite (Jest)
-│   ├── background.test.js    # Unit and integration tests for background timer alarms and badge logic
-│   ├── break.test.js         # Tests verifying break screen responses and options selection
-│   ├── options.test.js       # Options tab switching, custom task validation, and analytics storage tests
-│   ├── popup.test.js         # Popup start, pause, reset behavior, and timer display update tests
-│   └── setup.js              # Global chrome-mock and setup utilities for DOM and extensions testing
-├── jest.config.js            # Jest test framework configurations
-├── package.json              # Script definitions, developer environment setup, and Jest dependencies
-└── README.md                 # Project documentation (this file)
+├── .agents/                          # Agent customizations (auto-discovered)
+│   └── skills/
+│       └── plan-first/
+│           └── SKILL.md             # Enforces plan-before-code workflow for all coding tasks
+├── src/                              # Extension Source Code
+│   ├── manifest.json                 # Extension manifest (v3) configuring permissions and entry points
+│   ├── background.js                 # Service worker managing alarm-based timing logic, state, and tab focus
+│   ├── popup.html                    # Main extension interface popup
+│   ├── popup.js                      # Logic for managing popup timer display, start/pause/reset states
+│   ├── options.html                  # Settings configuration and analytics history dashboard
+│   ├── options.js                    # Configuration controls and records retrieval/rendering logic
+│   ├── break.html                    # Full-screen break/transition page opened when sessions complete
+│   └── break.js                      # Interactivity for handling break/session completion options
+├── tests/                            # Testing Suite (Jest)
+│   ├── background.test.js            # Unit and integration tests for background timer alarms and badge logic
+│   ├── break.test.js                 # Tests verifying break screen responses and options selection
+│   ├── options.test.js               # Options tab switching, custom task validation, and analytics storage tests
+│   ├── popup.test.js                 # Popup start, pause, reset behavior, and timer display update tests
+│   └── setup.js                      # Global chrome-mock and setup utilities for DOM and extensions testing
+├── jest.config.js                    # Jest test framework configurations
+├── package.json                      # Script definitions, developer environment setup, and Jest dependencies
+├── DESIGN.md                         # Inkwell Black & White design system specification
+└── README.md                         # Project documentation (this file)
 ```
 
 ---
