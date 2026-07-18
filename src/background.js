@@ -3,22 +3,33 @@
 let handlingAlarm = false;
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({
-    tasks: [
-      { name: "Reading", duration: 25 },
-      { name: "Develop", duration: 50 },
-    ],
-    shortBreak: 5,
-    longBreak: 15,
-    cycleTarget: 4,
-    timeLeft: 25 * 60,
-    isRunning: false,
-    currentMode: "work",
-    currentTaskIndex: 0,
-    completedWorkSessions: 0,
-    lastSessionDate: "",
+  chrome.storage.local.get(["tasks"], (data) => {
+    if (!data.tasks) {
+      chrome.storage.local.set({
+        tasks: [
+          { name: "Reading", duration: 25 },
+          { name: "Develop", duration: 50 },
+        ],
+        shortBreak: 5,
+        longBreak: 15,
+        cycleTarget: 4,
+        timeLeft: 25 * 60,
+        isRunning: false,
+        currentMode: "work",
+        currentTaskIndex: 0,
+        completedWorkSessions: 0,
+        lastSessionDate: "",
+      });
+      updateBadge(25 * 60, "work");
+    } else {
+      chrome.storage.local.get(["timeLeft", "currentMode"], (state) => {
+        updateBadge(
+          state.timeLeft !== undefined ? state.timeLeft : 25 * 60,
+          state.currentMode || "work"
+        );
+      });
+    }
   });
-  updateBadge(25 * 60, "work");
 });
 
 function updateBadge(timeLeft, mode) {
