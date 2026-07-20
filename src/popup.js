@@ -331,4 +331,10 @@ document.addEventListener("DOMContentLoaded", () => {
   openSettingsLink.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
   });
+
+  // ── Version Number ────────────────────────────────────────────────────────
+  const appVersion = document.getElementById("app-version");
+  if (appVersion) {
+    appVersion.textContent = "v" + chrome.runtime.getManifest().version;
+  }
 });

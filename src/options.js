@@ -192,4 +192,10 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     );
   });
+
+  // ── Version Number ────────────────────────────────────────────────────────
+  const appVersion = document.getElementById("app-version");
+  if (appVersion) {
+    appVersion.textContent = "v" + chrome.runtime.getManifest().version;
+  }
 });
