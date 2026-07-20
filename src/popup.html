@@ -226,6 +226,7 @@
         class="timer-display"
         id="time-left"
         style="visibility: hidden"
+        aria-live="polite"
       ></div>
 
       <!-- One button per custom task -->
@@ -233,14 +234,14 @@
 
       <!-- Short Break / Long Break -->
       <div id="break-btn-row">
-        <button class="break-btn" id="short-break-btn">☕ Short Break</button>
-        <button class="break-btn" id="long-break-btn">🛋️ Long Break</button>
+        <button class="break-btn" id="short-break-btn" aria-label="Start Short Break">☕ Short Break</button>
+        <button class="break-btn" id="long-break-btn" aria-label="Start Long Break">🛋️ Long Break</button>
       </div>
 
       <!-- Pause + Reset -->
       <div class="controls-row">
-        <button class="btn" id="pause-btn">⏸ Pause</button>
-        <button class="btn" id="reset-btn">↺ Reset</button>
+        <button class="btn" id="pause-btn" aria-label="Pause Timer">⏸ Pause</button>
+        <button class="btn" id="reset-btn" aria-label="Reset Timer">↺ Reset</button>
       </div>
 
       <div class="footer-links" style="position: relative; display: flex; justify-content: center; align-items: center;">

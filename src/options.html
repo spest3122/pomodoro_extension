@@ -389,18 +389,18 @@
           <h4>Break &amp; Schedule Architecture</h4>
           <label
             >Short Break Duration:
-            <input type="number" id="short-time" min="1" /> minutes</label
+            <input type="number" id="short-time" min="1" aria-label="Short break duration in minutes" /> minutes</label
           >
           <label
             >Long Break Duration:
-            <input type="number" id="long-time" min="1" /> minutes</label
+            <input type="number" id="long-time" min="1" aria-label="Long break duration in minutes" /> minutes</label
           >
           <label
             >Trigger Long Break After:
-            <input type="number" id="cycle-target" min="1" /> focus
+            <input type="number" id="cycle-target" min="1" aria-label="Number of focus blocks before a long break" /> focus
             blocks</label
           >
-          <button class="section-save-btn" id="save-break-btn">
+          <button class="section-save-btn" id="save-break-btn" aria-label="Save break settings">
             💾 Save Break Settings
           </button>
         </div>
@@ -408,18 +408,18 @@
         <div class="section" style="padding-top: 15px">
           <h4>Sound Settings</h4>
           <label>
-            <input type="checkbox" id="sound-work" />
+            <input type="checkbox" id="sound-work" aria-label="Toggle sound for work session completion" />
             Play sound when Work Session completes
           </label>
           <label style="margin-top: 5px">
-            <input type="checkbox" id="sound-short-break" />
+            <input type="checkbox" id="sound-short-break" aria-label="Toggle sound for short break completion" />
             Play sound when Short Break completes
           </label>
           <label style="margin-top: 5px">
-            <input type="checkbox" id="sound-long-break" />
+            <input type="checkbox" id="sound-long-break" aria-label="Toggle sound for long break completion" />
             Play sound when Long Break completes
           </label>
-          <button class="section-save-btn" id="save-sound-btn">
+          <button class="section-save-btn" id="save-sound-btn" aria-label="Save sound settings">
             💾 Save Sound Settings
           </button>
         </div>
@@ -431,6 +431,12 @@
           <div class="stat-number" id="today-count">0</div>
         </div>
 
+        <!-- Heatmap Container -->
+        <div class="stat-box" style="padding: 15px; transform: rotate(-1deg); margin-bottom: 25px;">
+          <h4 style="margin-bottom: 10px; text-align: left; font-size: 16px;">Last 30 Days Activity</h4>
+          <div id="heatmap-container" style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start;"></div>
+        </div>
+
         <div
           style="
             margin-bottom: 15px;
@@ -440,9 +446,14 @@
           "
         >
           <h4 style="margin: 0">Activity Timeline</h4>
-          <button class="clear-records-btn" id="clear-history-btn">
-            Clear All Logs
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="clear-records-btn" id="export-csv-btn" aria-label="Export history to CSV">Export CSV</button>
+            <button class="clear-records-btn" id="import-csv-btn" aria-label="Import history from CSV">Import CSV</button>
+            <input type="file" id="import-csv-file" accept=".csv" style="display: none;" />
+            <button class="clear-records-btn" id="clear-history-btn" aria-label="Clear all logs">
+              Clear All Logs
+            </button>
+          </div>
         </div>
         <ul class="history-list" id="history-log-container">
           <li style="color: #888; text-align: center; padding: 20px">
@@ -456,6 +467,9 @@
         <span id="app-version" style="font-family: var(--font-body); font-size: 12px; color: var(--accent-grey);"></span>
       </div>
     </div>
+
+    <!-- Heatmap Custom Tooltip -->
+    <div id="heatmap-tooltip" style="position: absolute; display: none; background: var(--ink-deep); color: var(--accent-white); padding: 6px 10px; border-radius: 8px; font-size: 12px; pointer-events: none; z-index: 1000; font-family: var(--font-body); box-shadow: 2px 2px 0px var(--accent-grey);"></div>
 
     <script src="options.js"></script>
   </body>

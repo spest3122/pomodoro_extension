@@ -105,6 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.className = `task-btn task-btn-${index}` + (isActiveTask ? " active" : "");
       btn.textContent = `${task.name} (${task.duration}min)`;
       btn.title = `${task.name} — ${task.duration} minutes`;
+      btn.setAttribute("aria-label", `Start task: ${task.name} for ${task.duration} minutes`);
 
       // Disable when: a break is actively RUNNING, OR timer is running on a different task
       if ((inBreak && isRunning) || (isRunning && !isActiveTask)) {

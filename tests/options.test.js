@@ -4,6 +4,7 @@ describe("options.js", () => {
   let soundWork, soundShortBreak, soundLongBreak, saveSoundBtn;
   let navSettings, navRecords, contentSettings, contentRecords;
   let todayCountEl, historyLogContainer, clearHistoryBtn;
+  let heatmapContainer, exportCsvBtn, importCsvBtn, importCsvFile;
 
   beforeEach(() => {
     global.clearAllEventListeners();
@@ -28,6 +29,10 @@ describe("options.js", () => {
 
       <div id="content-records">
         <div id="today-count">0</div>
+        <div id="heatmap-container"></div>
+        <button id="export-csv-btn">Export CSV</button>
+        <button id="import-csv-btn">Import CSV</button>
+        <input type="file" id="import-csv-file" accept=".csv" />
         <button id="clear-history-btn">Clear All Logs</button>
         <ul id="history-log-container"></ul>
       </div>
@@ -53,6 +58,10 @@ describe("options.js", () => {
     todayCountEl = document.getElementById("today-count");
     historyLogContainer = document.getElementById("history-log-container");
     clearHistoryBtn = document.getElementById("clear-history-btn");
+    heatmapContainer = document.getElementById("heatmap-container");
+    exportCsvBtn = document.getElementById("export-csv-btn");
+    importCsvBtn = document.getElementById("import-csv-btn");
+    importCsvFile = document.getElementById("import-csv-file");
 
     jest.resetModules();
     chrome.storage.local.clearMockStore();
@@ -303,5 +312,101 @@ describe("options.js", () => {
     clearHistoryBtn.click();
 
     expect(chrome.storage.local.getMockStore().history).toHaveLength(1);
+  });
+
+  test("renders heatmap correctly for the last 30 days based on history", () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    chrome.storage.local.setMockStore({
+      history: [
+        { taskName: "Develop", timestamp: yesterday.getTime() },
+        { taskName: "Reading", timestamp: today.getTime() },
+        { taskName: "Reading", timestamp: today.getTime() + 1000 },
+        { taskName: "Reading", timestamp: today.getTime() + 2000 },
+        { taskName: "Reading", timestamp: today.getTime() + 3000 }
+      ]
+    });
+
+    require("../src/options.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    navRecords.click();
+
+    // Heatmap has 30 squares
+    expect(heatmapContainer.children).toHaveLength(30);
+
+    // Yesterday had 1 block
+    const yesterdaySquare = heatmapContainer.children[28];
+    expect(yesterdaySquare.title).toContain("1 blocks");
+    // RGB or hex depending on jsdom, but setting it via inline style sets it as string. It might resolve differently in jsdom. Let's just check the string.
+    expect(yesterdaySquare.style.backgroundColor).toContain("rgb(168, 213, 186)");
+
+    // Today had 4 blocks
+    const todaySquare = heatmapContainer.children[29];
+    expect(todaySquare.title).toContain("4 blocks");
+    expect(todaySquare.style.backgroundColor).toContain("rgb(92, 184, 92)");
+  });
+
+  test("exports history to CSV", () => {
+    chrome.storage.local.setMockStore({
+      history: [
+        { taskName: "Develop", timestamp: 1719801200000 }
+      ]
+    });
+
+    const mockAnchor = {
+      setAttribute: jest.fn(),
+      click: jest.fn()
+    };
+    const realCreateElement = document.createElement.bind(document);
+    jest.spyOn(document, 'createElement').mockImplementation((tag) => {
+      if (tag === 'a') return mockAnchor;
+      return realCreateElement(tag);
+    });
+
+    require("../src/options.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+    
+    exportCsvBtn.click();
+    
+    expect(mockAnchor.setAttribute).toHaveBeenCalledWith("download", "pomodoro_history.csv");
+    expect(mockAnchor.setAttribute).toHaveBeenCalledWith("href", expect.stringContaining("data:text/csv;charset=utf-8"));
+    expect(mockAnchor.click).toHaveBeenCalled();
+    
+    document.createElement.mockRestore();
+  });
+
+  test("imports history from CSV and merges correctly", () => {
+    chrome.storage.local.setMockStore({
+      history: [
+        { taskName: "Develop", timestamp: 1000 }
+      ]
+    });
+
+    require("../src/options.js");
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    const csvData = `"Task Name",Timestamp,Date
+"Reading",2000,"Some Date"
+"Develop",1000,"Duplicate"`;
+
+    const mockFileReader = {
+      readAsText: jest.fn(function() {
+        this.onload({ target: { result: csvData } });
+      })
+    };
+    global.FileReader = jest.fn(() => mockFileReader);
+    global.alert = jest.fn();
+
+    const event = new Event("change");
+    Object.defineProperty(event, "target", { writable: false, value: { files: [{}] } });
+    importCsvFile.dispatchEvent(event);
+
+    const store = chrome.storage.local.getMockStore();
+    expect(store.history).toHaveLength(2);
+    expect(store.history[0]).toEqual({ taskName: "Develop", timestamp: 1000 });
+    expect(store.history[1]).toEqual({ taskName: "Reading", timestamp: 2000 });
   });
 });
